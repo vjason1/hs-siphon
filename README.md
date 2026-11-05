@@ -7,6 +7,8 @@ SIPHON tracks how much data is still left to migrate off a storage volume behind
 
 The script is `hs-siphon.py`; the tool is called SIPHON. It runs on **Windows, macOS and Linux**.
 
+> **Windows support has not been fully tested yet.** SIPHON 1.1.0 is written to run on Windows, but so far it has only been tested on Linux. If you run it on Windows, check the results against a known share first, and please [report any problems](https://github.com/vjason1/hs-siphon/issues).
+
 > **Who runs SIPHON where:** only **Hammerspace personnel** may run SIPHON on a Hammerspace node (DSX). **End users** should run it from their own client machine, with the Hammerspace Toolkit installed and the share mounted or mapped. Nobody should run it on an Anvil.
 
 ---
@@ -97,7 +99,7 @@ chmod +x hs-siphon.py
 
 ## Quick start
 
-**End users on Windows** (Command Prompt or PowerShell):
+**End users on Windows** (Command Prompt or PowerShell; not yet fully tested, see the note at the top):
 
 ```
 pip install hstk
@@ -344,7 +346,7 @@ Example from the output above: 1,040,530 files and 1,560.56 GB moved between 22:
 
 | Version | Changes |
 |---|---|
-| 1.1.0 | Rewritten in Python so SIPHON runs on Windows as well as macOS and Linux. Same prompts, file names, formats and saved defaults as 1.0.0. Adds Windows drive/UNC path support, finding `hs` in pip's scripts folder, plain-text banner fallback and `NO_COLOR`. Documents that only Hammerspace personnel may run SIPHON on DSX nodes. Replaces `hs-siphon.sh`. |
+| 1.1.0 | Rewritten in Python so SIPHON runs on Windows as well as macOS and Linux (Windows not yet fully tested). Same prompts, file names, formats and saved defaults as 1.0.0. Adds Windows drive/UNC path support, finding `hs` in pip's scripts folder, plain-text banner fallback and `NO_COLOR`. Documents that only Hammerspace personnel may run SIPHON on DSX nodes. Replaces `hs-siphon.sh`. |
 | 1.0.0 | First release as SIPHON (bash): any share path, volume discovery with `hs status volume`, multiple volumes per share, saved defaults, `all` shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional. |
 
 ## License
