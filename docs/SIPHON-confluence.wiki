@@ -12,6 +12,7 @@ The script is {{hs-siphon.sh}}; the tool is called SIPHON.
 ||Source code|[github.com/vjason1/hs-siphon|https://github.com/vjason1/hs-siphon]|
 ||Script|{{hs-siphon.sh}}|
 ||Version|1.0.0|
+||License|Apache-2.0 OR MIT|
 
 {warning:title=Do not run on an Anvil}
 SIPHON must not be run from a Hammerspace Anvil. Run it from a DSX node (inside tmux) or a non-Hammerspace client.
@@ -278,3 +279,12 @@ h2. Version history
 
 ||Version||Changes||
 |1.0.0|First release as SIPHON: any share path, volume discovery with {{hs status volume}}, multiple volumes per share, saved defaults, {{all}} shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional.|
+
+h2. License
+
+SIPHON is dual-licensed under either of:
+
+* Apache License, Version 2.0 ([LICENSE-APACHE|https://github.com/vjason1/hs-siphon/blob/main/LICENSE-APACHE])
+* MIT License ([LICENSE-MIT|https://github.com/vjason1/hs-siphon/blob/main/LICENSE-MIT])
+
+at your option. Unless you state otherwise, any contribution you submit for inclusion in this project is dual-licensed as above, without any additional terms or conditions.

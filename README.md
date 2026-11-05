@@ -25,6 +25,7 @@ The script is `hs-siphon.sh`; the tool is called SIPHON.
 - [Troubleshooting](#troubleshooting)
 - [Limitations and roadmap](#limitations-and-roadmap)
 - [Version history](#version-history)
+- [License](#license)
 
 ---
 
@@ -302,3 +303,12 @@ Example from the output above: 1,040,530 files and 1,560.56 GB moved between 22:
 | Version | Changes |
 |---|---|
 | 1.0.0 | First release as SIPHON: any share path, volume discovery with `hs status volume`, multiple volumes per share, saved defaults, `all` shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional. |
+
+## License
+
+SIPHON is dual-licensed under either of:
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT License ([LICENSE-MIT](LICENSE-MIT))
+
+at your option. Unless you state otherwise, any contribution you submit for inclusion in this project is dual-licensed as above, without any additional terms or conditions.

@@ -5,8 +5,10 @@
 # ==============================================================================
 # Project:         SIPHON (github.com/vjason1/hs-siphon)
 # Version:         1.0.0
-# License:         Apache-2.0 / MIT
+# License:         Apache-2.0 OR MIT (see LICENSE-APACHE and LICENSE-MIT)
 # Target Runtime:  Hammerspace Data Environment / Linux x86_64
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
 #
 # Description:
 #   Real-time tracking, flow-rate observation, and integrity verification
