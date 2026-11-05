@@ -7,6 +7,8 @@ SIPHON tracks how much data is still left to migrate off a storage volume behind
 
 The script is `hs-siphon.sh`; the tool is called SIPHON.
 
+> **Who runs SIPHON where:** only **Hammerspace personnel** may run SIPHON on a Hammerspace node (DSX). **End users** should run it from their own client machine, with the Hammerspace Toolkit installed and the share mounted or mapped. Nobody should run it on an Anvil.
+
 ---
 
 ## Contents
@@ -62,16 +64,16 @@ The first value is the number of files left to migrate; the second is the space 
     pip install hstk
     ```
     Project homepage: <https://github.com/hammer-space/hstk>
-- **tmux** on DSX nodes. Scans of large shares can take hours, and SIPHON must run inside a tmux session you started so a dropped connection doesn't kill it.
+- **tmux** on DSX nodes (Hammerspace personnel). Scans of large shares can take hours, and SIPHON must run inside a tmux session you started so a dropped connection doesn't kill it.
 - **`upload`** (optional). If the Hammerspace `upload` command is on the host, SIPHON uploads each result file. If it isn't, results are saved locally and the upload is skipped.
 
 ## Where to run it
 
-| Host | Supported | Notes |
+| Host | Who | Notes |
 |---|---|---|
-| Hammerspace DSX node | Yes | Toolkit already installed. Must be run inside tmux; SIPHON checks and exits if it isn't. |
-| Non-Hammerspace client | Yes | Install the toolkit with `pip install hstk`. Point SIPHON at the share's mount point or mapped drive. |
-| Hammerspace Anvil | **No** | SIPHON exits if you say you're on an Anvil. Run it from a DSX node or a client instead. |
+| Your own client machine | **End users** | Install the toolkit with `pip install hstk`. Point SIPHON at the share's mount point or mapped drive. |
+| Hammerspace DSX node | **Hammerspace personnel only** | Toolkit already installed. Must be run inside tmux; SIPHON checks and exits if it isn't. |
+| Hammerspace Anvil | **Nobody** | SIPHON exits if you say you're on an Anvil. |
 
 SIPHON always asks which kind of host you're on at startup; it can't detect this reliably by itself.
 
@@ -87,14 +89,23 @@ Or copy `hs-siphon.sh` to the host you'll run it from.
 
 ## Quick start
 
-On a DSX node:
+**End users, on your own client:**
+
+```
+pip install hstk
+./hs-siphon.sh
+```
+
+Answer the prompts: not an Anvil, not a DSX node, then enter the share's mount point or mapped drive (for example `/Volumes/Projects`), pick the source volume from the list, and let it scan. Keep the terminal open (or use tmux/screen) until the scans finish.
+
+**Hammerspace personnel, on a DSX node:**
 
 ```
 tmux new -s siphon          # start your own tmux session
 ./hs-siphon.sh
 ```
 
-Answer the prompts: not an Anvil, yes a DSX node, then enter a share path such as `/mnt/smb-data-portal/Projects`, pick the source volume from the list, and let it scan. Detach from tmux with `Ctrl-b` then `d`, and reattach later with `tmux attach -t siphon`.
+Answer the prompts: not an Anvil, yes a DSX node, then enter a share path such as `/mnt/smb-data-portal/Projects`. Detach from tmux with `Ctrl-b` then `d`, and reattach later with `tmux attach -t siphon`.
 
 To re-scan everything you've set up before, type `all` at the share prompt.
 
@@ -115,8 +126,8 @@ Running inside tmux session: siphon
 ```
 
 - **Anvil:** SIPHON prints an error and exits.
-- **DSX node:** SIPHON checks that it's inside tmux. If not, it exits and tells you to start a tmux session and re-run.
-- **Neither:** SIPHON treats the host as a non-Hammerspace client and needs the toolkit to be installed.
+- **DSX node** (Hammerspace personnel only): SIPHON reminds you of this and checks that it's inside tmux. If not, it exits and tells you to start a tmux session and re-run.
+- **Neither:** SIPHON treats the host as an end-user client and needs the toolkit to be installed.
 
 In every case, if the `hs` command can't be found, SIPHON exits. On a client it shows `pip install hstk`.
 
@@ -284,7 +295,7 @@ Example from the output above: 1,040,530 files and 1,560.56 GB moved between 22:
 |---|---|
 | `ERROR: 'hs' command not found` | Install the toolkit with `pip install hstk`, or make sure its install location is on your `PATH`. |
 | `ERROR: Not running inside a tmux session.` | On a DSX node, start a tmux session (`tmux new -s siphon`) and run SIPHON inside it. |
-| `ERROR: This script must NOT be run from a Hammerspace Anvil.` | Run it from a DSX node or a client host. |
+| `ERROR: This script must NOT be run from a Hammerspace Anvil.` | End users: run it from your own client. Hammerspace personnel: use a DSX node. |
 | `No volumes found in the output` | The path may not be on a Hammerspace share, or the toolkit can't reach it. Check the path, or type the volume name manually with `m`. |
 | `Previous run: none` every time | The output folder is being cleared (often `/tmp` on reboot). Set `HS_SUM_OUTDIR` to a persistent folder. |
 | `NOTE: 'upload' command not found` | The host has no `upload` command. Results are still saved in the output folder. |

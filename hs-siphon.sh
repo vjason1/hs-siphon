@@ -36,7 +36,10 @@
 #   - On a non-Hammerspace host (remote client):  pip install hstk
 #     Homepage: https://github.com/hammer-space/hstk
 #
-# DO NOT run this script on a Hammerspace Anvil - use a DSX node or a client.
+# Who runs SIPHON where:
+#   - End users: run it from your own client machine (pip install hstk).
+#   - Hammerspace personnel only: may run it on a Hammerspace DSX node.
+#   - Nobody: DO NOT run this script on a Hammerspace Anvil.
 # On a DSX node, start your own tmux session first and run SIPHON inside it;
 # the script checks for this and exits if tmux is not in use.
 #
@@ -260,7 +263,8 @@ preflight() {
     echo "   - Already installed on Hammerspace DSX nodes."
     echo "   - Non-Hammerspace hosts:  pip install hstk"
     echo "     (https://github.com/hammer-space/hstk)"
-    echo " On a DSX node, run this from inside a tmux session you started."
+    echo " End users: run SIPHON from your own client machine."
+    echo " Only Hammerspace personnel may run it on a DSX node (inside tmux)."
     echo " Do NOT run this script on a Hammerspace Anvil."
     echo "=================================================================="
     echo
@@ -271,10 +275,12 @@ preflight() {
     if ask_yn "Are you running this on a Hammerspace Anvil?" ""; then
         echo
         echo -e "${CLR_BOLD}ERROR: This script must NOT be run from a Hammerspace Anvil.${CLR_RESET}"
-        echo "Please run it from a DSX node or a client host instead."
+        echo "End users: run it from your own client machine. Hammerspace personnel: use a DSX node."
         exit 1
     elif ask_yn "Are you running this on a Hammerspace DSX node?" ""; then
         hs_node=1
+        echo "DSX node: only Hammerspace personnel may run SIPHON here."
+        echo "          End users should run it from their own client machine instead."
         echo "DSX node: the Hammerspace Toolkit is already installed."
 
         # On a Hammerspace node the scans must run inside a tmux session that the
