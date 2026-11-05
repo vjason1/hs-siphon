@@ -12,7 +12,7 @@ The script is {{hs-siphon.py}}; the tool is called SIPHON. It runs on *Windows, 
 ||Source code|[github.com/vjason1/hs-siphon|https://github.com/vjason1/hs-siphon]|
 ||Script|{{hs-siphon.py}}|
 ||Version|1.1.0|
-||Runs on|Windows, macOS, Linux (Python 3.6+)|
+||Runs on|Windows (not yet fully tested), macOS, Linux (Python 3.6+)|
 ||License|Apache-2.0 OR MIT|
 
 {warning:title=Who runs SIPHON where}
@@ -20,6 +20,10 @@ The script is {{hs-siphon.py}}; the tool is called SIPHON. It runs on *Windows, 
 * *End users* should run it from their own client machine, with the Hammerspace Toolkit installed and the share mounted or mapped.
 * Nobody should run SIPHON on a Hammerspace Anvil.
 {warning}
+
+{note:title=Windows support has not been fully tested yet}
+SIPHON 1.1.0 is written to run on Windows, but so far it has only been tested on Linux. If you run it on Windows, check the results against a known share first, and please [report any problems|https://github.com/vjason1/hs-siphon/issues].
+{note}
 
 h2. How it works
 
@@ -80,7 +84,7 @@ h2. Quick start
 
 h3. End users on Windows
 
-In Command Prompt or PowerShell:
+In Command Prompt or PowerShell (not yet fully tested, see the note at the top):
 
 {code}
 pip install hstk
@@ -324,7 +328,7 @@ h2. Limitations and roadmap
 h2. Version history
 
 ||Version||Changes||
-|1.1.0|Rewritten in Python so SIPHON runs on Windows as well as macOS and Linux. Same prompts, file names, formats and saved defaults as 1.0.0. Adds Windows drive/UNC path support, finding {{hs}} in pip's scripts folder, plain-text banner fallback and {{NO_COLOR}}. Documents that only Hammerspace personnel may run SIPHON on DSX nodes. Replaces {{hs-siphon.sh}}.|
+|1.1.0|Rewritten in Python so SIPHON runs on Windows as well as macOS and Linux (Windows not yet fully tested). Same prompts, file names, formats and saved defaults as 1.0.0. Adds Windows drive/UNC path support, finding {{hs}} in pip's scripts folder, plain-text banner fallback and {{NO_COLOR}}. Documents that only Hammerspace personnel may run SIPHON on DSX nodes. Replaces {{hs-siphon.sh}}.|
 |1.0.0|First release as SIPHON (bash): any share path, volume discovery with {{hs status volume}}, multiple volumes per share, saved defaults, {{all}} shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional.|
 
 h2. License
