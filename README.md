@@ -5,7 +5,7 @@ Data migration telemetry for Hammerspace.
 
 SIPHON tracks how much data is still left to migrate off a storage volume behind a Hammerspace share. For each share and volume you pick, it counts the files (and GB) that still have an instance on that volume. It saves the result, compares it with the previous run, and uploads it. Run it several times a day: the counts should go down as the migration progresses, and the difference between runs gives you your throughput.
 
-The script is `hs-siphon.sh`; the tool is called SIPHON.
+The script is `hs-siphon.py`; the tool is called SIPHON. It runs on **Windows, macOS and Linux**.
 
 > **Who runs SIPHON where:** only **Hammerspace personnel** may run SIPHON on a Hammerspace node (DSX). **End users** should run it from their own client machine, with the Hammerspace Toolkit installed and the share mounted or mapped. Nobody should run it on an Anvil.
 
@@ -54,24 +54,27 @@ The result is a pair, `{files, GB}`, for example:
 
 The first value is the number of files left to migrate; the second is the space they use, in GB.
 
+SIPHON calls `hs` directly (not through a shell), so the expression works the same on Windows, macOS and Linux.
+
 ## Requirements
 
-- **Bash** on Linux or macOS.
+- **Python 3.6 or later.** The Hammerspace Toolkit is itself a Python package, so any machine that can run `hs` already has Python.
 - **Hammerspace Toolkit** (`hstk`), which provides the `hs` command.
   - Already installed on Hammerspace DSX nodes.
-  - On any other host, install it with pip:
+  - On any other host (Windows, macOS, Linux), install it with pip:
     ```
     pip install hstk
     ```
     Project homepage: <https://github.com/hammer-space/hstk>
+- **The share mounted or mapped** on your client: a mapped drive or UNC path on Windows, a mount point on macOS or Linux.
 - **tmux** on DSX nodes (Hammerspace personnel). Scans of large shares can take hours, and SIPHON must run inside a tmux session you started so a dropped connection doesn't kill it.
-- **`upload`** (optional). If the Hammerspace `upload` command is on the host, SIPHON uploads each result file. If it isn't, results are saved locally and the upload is skipped.
+- **`upload`** (optional). If the Hammerspace `upload` command is on the host, SIPHON uploads each result file. If it isn't (typical on a client), results are saved locally and the upload is skipped.
 
 ## Where to run it
 
 | Host | Who | Notes |
 |---|---|---|
-| Your own client machine | **End users** | Install the toolkit with `pip install hstk`. Point SIPHON at the share's mount point or mapped drive. |
+| Your own client machine (Windows, macOS, Linux) | **End users** | Install the toolkit with `pip install hstk`. Point SIPHON at the share's mapped drive, UNC path or mount point. |
 | Hammerspace DSX node | **Hammerspace personnel only** | Toolkit already installed. Must be run inside tmux; SIPHON checks and exits if it isn't. |
 | Hammerspace Anvil | **Nobody** | SIPHON exits if you say you're on an Anvil. |
 
@@ -79,30 +82,46 @@ SIPHON always asks which kind of host you're on at startup; it can't detect this
 
 ## Installation
 
+Download `hs-siphon.py` from this repository, or clone it:
+
 ```
 git clone https://github.com/vjason1/hs-siphon.git
 cd hs-siphon
-chmod +x hs-siphon.sh
 ```
 
-Or copy `hs-siphon.sh` to the host you'll run it from.
+On macOS and Linux you can also make it executable so you can run `./hs-siphon.py`:
+
+```
+chmod +x hs-siphon.py
+```
 
 ## Quick start
 
-**End users, on your own client:**
+**End users on Windows** (Command Prompt or PowerShell):
 
 ```
 pip install hstk
-./hs-siphon.sh
+py hs-siphon.py
 ```
 
-Answer the prompts: not an Anvil, not a DSX node, then enter the share's mount point or mapped drive (for example `/Volumes/Projects`), pick the source volume from the list, and let it scan. Keep the terminal open (or use tmux/screen) until the scans finish.
+(Use `python hs-siphon.py` if the `py` launcher isn't installed.) Answer the prompts: not an Anvil, not a DSX node, then enter the share's mapped drive or UNC path, for example `Z:\Projects` or `\\fileserver\Projects`.
+
+**End users on macOS or Linux:**
+
+```
+pip install hstk
+python3 hs-siphon.py
+```
+
+Enter the share's mount point, for example `/Volumes/Projects`.
+
+Then pick the source volume from the list and let it scan. Keep the window open, and the computer awake, until the scans finish. On macOS or Linux you can run it inside tmux or screen so it survives a closed terminal.
 
 **Hammerspace personnel, on a DSX node:**
 
 ```
 tmux new -s siphon          # start your own tmux session
-./hs-siphon.sh
+python3 hs-siphon.py
 ```
 
 Answer the prompts: not an Anvil, yes a DSX node, then enter a share path such as `/mnt/smb-data-portal/Projects`. Detach from tmux with `Ctrl-b` then `d`, and reattach later with `tmux attach -t siphon`.
@@ -113,42 +132,43 @@ To re-scan everything you've set up before, type `all` at the share prompt.
 
 ### 1. Banner and requirements
 
-SIPHON prints its banner and a short summary of the requirements.
+SIPHON prints its banner and a short summary of the requirements. (On a console that can't show the banner's box-drawing characters, it prints a plain-text version.)
 
 ### 2. Host check
 
 ```
-Current host: dsx01
+Current host: laptop-042
 Are you running this on a Hammerspace Anvil? (y/n): n
-Are you running this on a Hammerspace DSX node? (y/n): y
-DSX node: the Hammerspace Toolkit is already installed.
-Running inside tmux session: siphon
+Are you running this on a Hammerspace DSX node? (y/n): n
+Client host: the Hammerspace Toolkit must be installed (pip install hstk).
+Keep this window open (and the computer awake) until the scans finish.
 ```
 
 - **Anvil:** SIPHON prints an error and exits.
 - **DSX node** (Hammerspace personnel only): SIPHON reminds you of this and checks that it's inside tmux. If not, it exits and tells you to start a tmux session and re-run.
-- **Neither:** SIPHON treats the host as an end-user client and needs the toolkit to be installed.
+- **Neither:** SIPHON treats the host as an end-user client.
 
-In every case, if the `hs` command can't be found, SIPHON exits. On a client it shows `pip install hstk`.
+In every case, if the `hs` command can't be found, SIPHON exits. On a client it shows `pip install hstk`. SIPHON looks for `hs` on your `PATH` and in Python's scripts folder, where pip installs it.
 
 ### 3. Choose a share
 
 ```
 Share path examples:
-  DSX:            /mnt/smb-data-portal/<sharename>/<optional/subfolder/path>
-  Remote client:  the share's mapped drive or mount point (e.g. /Volumes/Projects, /mnt/z)
+  DSX:             /mnt/smb-data-portal/<sharename>/<optional/subfolder/path>
+  Windows client:  the share's mapped drive or UNC path (e.g. Z:\Projects, \\server\Projects)
+  Mac/Linux client: the share's mount point (e.g. /Volumes/Projects, /mnt/projects)
 
-Enter a Hammerspace share path: /mnt/smb-data-portal/Linux/LinuxHome
+Enter a Hammerspace share path: Z:\Linux\LinuxHome
 ```
 
-You can point at a whole share or a subfolder of one. A trailing `/` is ignored. If the path isn't a directory on this host, SIPHON warns you and asks whether to use it anyway.
+You can point at a whole share or a subfolder of one. Trailing slashes and surrounding quotes (from a pasted path) are ignored. If the path isn't a folder on this machine, SIPHON warns you and asks whether to use it anyway.
 
 ### 4. Choose the volume(s)
 
 If this share has a saved default (see [Saved defaults](#saved-defaults)), SIPHON offers to reuse it. Otherwise it runs `hs status volume <share>` and lists every volume connected to the share:
 
 ```
-Volumes connected to /mnt/smb-data-portal/Linux/LinuxHome:
+Volumes connected to Z:\Linux\LinuxHome:
      1) dsx01.example.com::/hsvol0
      2) dsx02.example.com::/hsvol0
      3) objectstore::/backing001
@@ -175,7 +195,7 @@ Your choice is saved as the default for that share.
 
 ```
 Scan list so far:
-  /mnt/smb-data-portal/Linux/LinuxHome  ->  legacy-nas::/ifs/data/Linux/LinuxHome
+  Z:\Linux\LinuxHome  ->  legacy-nas::/ifs/data/Linux/LinuxHome
 Add another share path? (y/N):
 ```
 
@@ -183,7 +203,7 @@ Answer `y` to add another share, or press Enter to start scanning. At the share 
 
 ### 6. Scans
 
-SIPHON runs one scan per share/volume pair, one after the other. Each result is printed, saved, compared with the previous run and uploaded. A summary table is printed at the end:
+SIPHON runs one scan per share/volume pair, one after the other. Each result is printed, saved, compared with the previous run and uploaded (if `upload` is available). A summary table is printed at the end:
 
 ```
 ================================ Summary ================================
@@ -232,11 +252,11 @@ The last line of the comparison is one of:
 | `WARNING: value(s) INCREASED - expected a decrease` | The file count or size went up. New data may be landing on the source volume. |
 | `could not compare (values missing ...)` | One of the scans didn't return a result, usually because `hs sum` failed. |
 
-The full-precision GB value is kept in the `{files, GB}` line; the comparison rounds to two decimals.
+The full-precision GB value is kept in the `{files, GB}` line; the comparison rounds to two decimals. Times are in the local time of the machine that ran the scan.
 
 ## Saved defaults
 
-Each time you pick volumes for a share, SIPHON saves the choice to `~/.hs_sum_volume_map`. The next time you enter that share path, it offers the saved volumes (press Enter to accept), and `all` at the share prompt queues every saved pair.
+Each time you pick volumes for a share, SIPHON saves the choice to `.hs_sum_volume_map` in your home folder (`~/.hs_sum_volume_map` on macOS and Linux, `%USERPROFILE%\.hs_sum_volume_map` on Windows). The next time you enter that share path, it offers the saved volumes (press Enter to accept), and `all` at the share prompt queues every saved pair.
 
 The file is plain text, one share/volume pair per line, separated by a tab:
 
@@ -245,36 +265,45 @@ The file is plain text, one share/volume pair per line, separated by a tab:
 /mnt/smb-data-portal/Projects	legacy-nas::/ifs/data/Shared/Projects
 ```
 
-To change a share's default, enter the share and answer `n` when asked to use the saved volumes; your new choice replaces the old one. To remove a share, delete its lines from the file.
+Shares are matched by the exact path you typed, so `Z:\Projects` and `\\fileserver\Projects` are saved separately. To change a share's default, enter the share and answer `n` when asked to use the saved volumes; your new choice replaces the old one. To remove a share, delete its lines from the file.
 
 ## Configuration
 
-Set these environment variables before running the script to change where files go:
+Set these environment variables before running SIPHON to change where files go:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `HS_SUM_OUTDIR` | `/tmp` | Folder for result files. |
-| `HS_SUM_MAPFILE` | `~/.hs_sum_volume_map` | Saved share-to-volume defaults. |
+| `HS_SUM_OUTDIR` | `/tmp` on macOS/Linux; your temp folder (`%TEMP%`) on Windows | Folder for result files. |
+| `HS_SUM_MAPFILE` | `.hs_sum_volume_map` in your home folder | Saved share-to-volume defaults. |
+| `NO_COLOR` | not set | Set to any value to turn off colored output. |
 
-Many Linux systems clear `/tmp` on reboot, which erases the run history (the next run will report `Previous run: none`). To keep it, use a persistent folder:
+Temp folders can be cleared (`/tmp` on reboot on many Linux systems, `%TEMP%` by disk cleanup on Windows), which erases the run history so the next run reports `Previous run: none`. To keep it, use a persistent folder:
 
 ```
-HS_SUM_OUTDIR=/var/tmp ./hs-siphon.sh
+# macOS / Linux
+HS_SUM_OUTDIR=/var/tmp python3 hs-siphon.py
+
+# Windows PowerShell
+$env:HS_SUM_OUTDIR = "$HOME\siphon-results"; py hs-siphon.py
+
+# Windows Command Prompt
+set HS_SUM_OUTDIR=%USERPROFILE%\siphon-results
+py hs-siphon.py
 ```
 
 ## Files SIPHON creates
 
 | File | Contents |
 |---|---|
-| `$HS_SUM_OUTDIR/hs_sum_<share>__<volume>.txt` | Latest result for a share/volume pair. This is the file that gets uploaded. |
-| `$HS_SUM_OUTDIR/hs_sum_<share>__<volume>.txt.prev` | The previous result, kept for comparison. |
-| `$HS_SUM_MAPFILE` | Saved share-to-volume defaults. |
+| `<HS_SUM_OUTDIR>/hs_sum_<share>__<volume>.txt` | Latest result for a share/volume pair. This is the file that gets uploaded. |
+| `<HS_SUM_OUTDIR>/hs_sum_<share>__<volume>.txt.prev` | The previous result, kept for comparison. |
+| `<HS_SUM_MAPFILE>` | Saved share-to-volume defaults. |
 
 `<share>` is the last folder of the share path and `<volume>` is the volume name, with unsafe characters replaced by `_`, e.g. `hs_sum_LinuxHome__legacy-nas_ifs_data_Linux_LinuxHome.txt`.
 
-The "previous run" finish time comes from the result file's modification time, so don't edit or `touch` result files between runs.
+The "previous run" finish time comes from the result file's modification time, so don't edit or touch result files between runs.
 
-**Upgrading from the original script:** result files from the earlier single-volume script (`hs_sum_<share>.txt`) are picked up automatically on the first run for that share, so the history carries over.
+**Upgrading from earlier versions:** SIPHON 1.1.0 uses the same file names, formats and saved defaults as the 1.0.0 bash script, so your history and saved shares carry over. Result files from the original single-volume script (`hs_sum_<share>.txt`) are also picked up automatically on the first run for that share.
 
 ## Calculating throughput
 
@@ -293,14 +322,16 @@ Example from the output above: 1,040,530 files and 1,560.56 GB moved between 22:
 
 | Symptom | Cause and fix |
 |---|---|
-| `ERROR: 'hs' command not found` | Install the toolkit with `pip install hstk`, or make sure its install location is on your `PATH`. |
+| `ERROR: 'hs' command not found` | Install the toolkit with `pip install hstk`. If it's installed, make sure pip's scripts folder is on your `PATH` (on Windows, pip prints this folder's location with a warning during install). |
+| `'py' is not recognized` / `python: command not found` | Install Python 3 from python.org (on Windows, tick "Add python.exe to PATH"), or use `python` / `python3` instead of `py`. |
 | `ERROR: Not running inside a tmux session.` | On a DSX node, start a tmux session (`tmux new -s siphon`) and run SIPHON inside it. |
 | `ERROR: This script must NOT be run from a Hammerspace Anvil.` | End users: run it from your own client. Hammerspace personnel: use a DSX node. |
-| `No volumes found in the output` | The path may not be on a Hammerspace share, or the toolkit can't reach it. Check the path, or type the volume name manually with `m`. |
-| `Previous run: none` every time | The output folder is being cleared (often `/tmp` on reboot). Set `HS_SUM_OUTDIR` to a persistent folder. |
+| `No volumes found in the output` | The path may not be on a Hammerspace share, or the toolkit can't reach it. Check the path (on Windows, that the drive is mapped), or type the volume name manually with `m`. |
+| `Previous run: none` every time | The output folder is being cleared. Set `HS_SUM_OUTDIR` to a persistent folder. |
 | `NOTE: 'upload' command not found` | The host has no `upload` command. Results are still saved in the output folder. |
 | `WARNING: value(s) INCREASED` | New or changed data is landing on the source volume, or the scan counted something different. Check for writes to the old storage. |
-| `No input - exiting.` | Input ended at a prompt (for example Ctrl-D, or a closed terminal). Re-run SIPHON. |
+| Garbled characters or `[1;36m` codes | The console doesn't support colors. Set `NO_COLOR=1`, or use Windows Terminal / PowerShell on Windows 10 or later. |
+| `No input - exiting.` | Input ended at a prompt (Ctrl-D, Ctrl-Z then Enter on Windows, or a closed terminal). Re-run SIPHON. |
 
 ## Limitations and roadmap
 
@@ -313,7 +344,8 @@ Example from the output above: 1,040,530 files and 1,560.56 GB moved between 22:
 
 | Version | Changes |
 |---|---|
-| 1.0.0 | First release as SIPHON: any share path, volume discovery with `hs status volume`, multiple volumes per share, saved defaults, `all` shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional. |
+| 1.1.0 | Rewritten in Python so SIPHON runs on Windows as well as macOS and Linux. Same prompts, file names, formats and saved defaults as 1.0.0. Adds Windows drive/UNC path support, finding `hs` in pip's scripts folder, plain-text banner fallback and `NO_COLOR`. Documents that only Hammerspace personnel may run SIPHON on DSX nodes. Replaces `hs-siphon.sh`. |
+| 1.0.0 | First release as SIPHON (bash): any share path, volume discovery with `hs status volume`, multiple volumes per share, saved defaults, `all` shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional. |
 
 ## License
 
