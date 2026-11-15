@@ -76,6 +76,10 @@ article th { background: var(--wash); }
   </section>
 
   <article id="doc">
+<p>Script: <a href="https://github.com/vjason1/hs-siphon/blob/main/hs-siphon.py">hs-siphon.py</a><br />
+Version: 1.2.0<br />
+Updated: 2026-11-14<br />
+Authors: Jason Ventresco (with Claude)</p>
 <p><strong>S.I.P.H.O.N. — Storage Ingestion Progress &amp; High-volume Orchestration Navigator</strong><br> Data migration telemetry for Hammerspace.</p>
 <p>SIPHON tracks how much data is still left to migrate off a storage volume behind a Hammerspace share. For each share and volume you pick, it counts the files (and GB) that still have an instance on that volume. It saves the result, compares it with the previous run, and uploads it. Run it several times a day, by hand or on a schedule (cron on Linux and macOS): the counts should go down as the migration progresses, and the difference between runs gives you your throughput.</p>
 <p>The script is <code>hs-siphon.py</code>; the tool is called SIPHON. It runs on <strong>Windows, macOS and Linux</strong>.</p>

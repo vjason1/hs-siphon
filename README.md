@@ -1,5 +1,10 @@
 # SIPHON
 
+Script: [hs-siphon.py](https://github.com/vjason1/hs-siphon/blob/main/hs-siphon.py)  
+Version: 1.2.0  
+Updated: 2026-11-14  
+Authors: Jason Ventresco (with Claude)
+
 **S.I.P.H.O.N. — Storage Ingestion Progress & High-volume Orchestration Navigator**
 Data migration telemetry for Hammerspace.
 

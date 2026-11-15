@@ -3,7 +3,8 @@
 
 The page holds the whole SIPHON guide with a "Copy for Confluence" button, for
 pasting straight into a Confluence page (no Markup option needed). GitHub
-references are removed, because the page is for the internal Confluence space.
+references are removed (the page is for an internal Confluence space), except the
+script link in the header block at the top.
 
 Usage:  python3 docs/build-confluence-paste.py      (needs pandoc)
 """
@@ -37,9 +38,11 @@ def paste_markdown():
     md = swap(md, "([LICENSE-APACHE](LICENSE-APACHE))", "(see `LICENSE-APACHE`)")
     md = swap(md, "([LICENSE-MIT](LICENSE-MIT))", "(see `LICENSE-MIT`)")
     md = re.sub(r"\[([^\]]+)\]\(#[^)]+\)", r"\1", md)                       # section links don't survive a paste
-    if re.search(r"github", md, re.I):
+    # The only GitHub reference kept is the script link in the header block
+    check = md.replace("https://github.com/vjason1/hs-siphon/blob/main/hs-siphon.py", "")
+    if re.search(r"github", check, re.I):
         raise SystemExit("A GitHub reference is left in the paste page: " +
-                         re.search(r".*github.*", md, re.I).group(0))
+                         re.search(r".*github.*", check, re.I).group(0))
     return md
 
 

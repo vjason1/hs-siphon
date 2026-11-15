@@ -2,6 +2,11 @@
 
 h1. SIPHON
 
+Script: [hs-siphon.py|https://github.com/vjason1/hs-siphon/blob/main/hs-siphon.py]
+Version: 1.2.0
+Updated: 2026-11-14
+Authors: Jason Ventresco (with Claude)
+
 *S.I.P.H.O.N. — Storage Ingestion Progress & High-volume Orchestration Navigator*
 Data migration telemetry for Hammerspace.
 
@@ -9,8 +14,6 @@ SIPHON tracks how much data is still left to migrate off a storage volume behind
 
 The script is {{hs-siphon.py}}; the tool is called SIPHON. It runs on *Windows, macOS and Linux*.
 
-||Script|{{hs-siphon.py}}|
-||Version|1.2.0|
 ||Runs on|Windows (not yet fully tested), macOS, Linux (Python 3.6+)|
 ||License|Apache-2.0 OR MIT|
 
