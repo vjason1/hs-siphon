@@ -70,7 +70,7 @@ SIPHON always asks which kind of host you're on at startup; it can't detect this
 
 h2. Installation
 
-Copy {{hs-siphon.py}} to the host you'll run it from. It's a single file with no other dependencies besides the Hammerspace Toolkit.
+Copy {{hs-siphon.py}} to the host you'll run it from. It's a single file; it needs only Python and the Hammerspace Toolkit.
 
 On macOS and Linux you can also make it executable ({{chmod +x hs-siphon.py}}) so you can run {{./hs-siphon.py}}.
 
