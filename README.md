@@ -449,8 +449,6 @@ Two Confluence versions of these docs are in [`docs/`](docs/). Neither contains 
 - [`SIPHON-confluence-paste.html`](docs/SIPHON-confluence-paste.html): download it, open it in a browser, click **Copy for Confluence** and paste into a Confluence page. This works in any Confluence editor.
 - [`SIPHON-confluence.wiki`](docs/SIPHON-confluence.wiki): Confluence wiki markup, for editors with **Insert → Markup**.
 
-After changing this README, rebuild the paste page with `python3 docs/build-confluence-paste.py` (needs pandoc).
-
 ## License
 
 SIPHON is dual-licensed under either of:
