@@ -3,11 +3,11 @@
 **S.I.P.H.O.N. — Storage Ingestion Progress & High-volume Orchestration Navigator**
 Data migration telemetry for Hammerspace.
 
-SIPHON tracks how much data is still left to migrate off a storage volume behind a Hammerspace share. For each share and volume you pick, it counts the files (and GB) that still have an instance on that volume. It saves the result, compares it with the previous run, and uploads it. Run it several times a day: the counts should go down as the migration progresses, and the difference between runs gives you your throughput.
+SIPHON tracks how much data is still left to migrate off a storage volume behind a Hammerspace share. For each share and volume you pick, it counts the files (and GB) that still have an instance on that volume. It saves the result, compares it with the previous run, and uploads it. Run it several times a day, by hand or on a schedule (cron on Linux and macOS): the counts should go down as the migration progresses, and the difference between runs gives you your throughput.
 
 The script is `hs-siphon.py`; the tool is called SIPHON. It runs on **Windows, macOS and Linux**.
 
-> **Windows support has not been fully tested yet.** SIPHON 1.1.0 is written to run on Windows, but so far it has only been tested on Linux. If you run it on Windows, check the results against a known share first, and please [report any problems](https://github.com/vjason1/hs-siphon/issues).
+> **Windows support has not been fully tested yet.** SIPHON is written to run on Windows, but so far it has only been tested on Linux. If you run it on Windows, check the results against a known share first, and please [report any problems](https://github.com/vjason1/hs-siphon/issues).
 
 > **Who runs SIPHON where:** only **Hammerspace personnel** may run SIPHON on a Hammerspace node (DSX). **End users** should run it from their own client machine, with the Hammerspace Toolkit installed and the share mounted or mapped. Nobody should run it on an Anvil.
 
@@ -21,6 +21,7 @@ The script is `hs-siphon.py`; the tool is called SIPHON. It runs on **Windows, m
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Walkthrough](#walkthrough)
+- [Scheduling recurring reports (cron)](#scheduling-recurring-reports-cron)
 - [Output](#output)
 - [Saved defaults](#saved-defaults)
 - [Configuration](#configuration)
@@ -70,6 +71,7 @@ SIPHON calls `hs` directly (not through a shell), so the expression works the sa
     Project homepage: <https://github.com/hammer-space/hstk>
 - **The share mounted or mapped** on your client: a mapped drive or UNC path on Windows, a mount point on macOS or Linux.
 - **tmux** on DSX nodes (Hammerspace personnel). Scans of large shares can take hours, and SIPHON must run inside a tmux session you started so a dropped connection doesn't kill it.
+- **cron** (optional, Linux and macOS, including DSX nodes). Needed only to schedule recurring reports; SIPHON uses the `crontab` command.
 - **`upload`** (optional). If the Hammerspace `upload` command is on the host, SIPHON uploads each result file. If it isn't (typical on a client), results are saved locally and the upload is skipped.
 
 ## Where to run it
@@ -152,7 +154,22 @@ Keep this window open (and the computer awake) until the scans finish.
 
 In every case, if the `hs` command can't be found, SIPHON exits. On a client it shows `pip install hstk`. SIPHON looks for `hs` on your `PATH` and in Python's scripts folder, where pip installs it.
 
-### 3. Choose a share
+### 3. Run now or schedule
+
+On Linux and macOS, SIPHON asks what you want to do. If a schedule already exists, it's shown first.
+
+```
+What would you like to do?
+  1) Run the report once now
+  2) Schedule the report to run every day (cron)
+  3) Run once now AND schedule it
+  4) Remove the existing schedule
+Choice [1]:
+```
+
+Press **Enter** to run once now, exactly as in earlier versions. Option 4 appears only when a schedule exists. See [Scheduling recurring reports (cron)](#scheduling-recurring-reports-cron) for options 2–4. On Windows, or on a host without `crontab`, there's no menu and SIPHON runs once.
+
+### 4. Choose a share
 
 ```
 Share path examples:
@@ -165,7 +182,7 @@ Enter a Hammerspace share path: Z:\Linux\LinuxHome
 
 You can point at a whole share or a subfolder of one. Trailing slashes and surrounding quotes (from a pasted path) are ignored. If the path isn't a folder on this machine, SIPHON warns you and asks whether to use it anyway.
 
-### 4. Choose the volume(s)
+### 5. Choose the volume(s)
 
 If this share has a saved default (see [Saved defaults](#saved-defaults)), SIPHON offers to reuse it. Otherwise it runs `hs status volume <share>` and lists every volume connected to the share:
 
@@ -193,7 +210,7 @@ Selection:
 
 Your choice is saved as the default for that share.
 
-### 5. Add more shares
+### 6. Add more shares
 
 ```
 Scan list so far:
@@ -203,7 +220,7 @@ Add another share path? (y/N):
 
 Answer `y` to add another share, or press Enter to start scanning. At the share prompt you can also type **`all`** to queue every saved share/volume pair.
 
-### 6. Scans
+### 7. Scans
 
 SIPHON runs one scan per share/volume pair, one after the other. Each result is printed, saved, compared with the previous run and uploaded (if `upload` is available). A summary table is printed at the end:
 
@@ -217,6 +234,67 @@ Done. Results saved in /tmp/hs_sum_*.txt
 ```
 
 If a scan fails, the error is recorded in that share's result file and the remaining scans still run.
+
+## Scheduling recurring reports (cron)
+
+On Linux and macOS, including Hammerspace DSX nodes (Hammerspace personnel only), SIPHON can add a cron job that runs your report automatically every day at the times you choose. One-off runs still work exactly as before.
+
+### Set up a schedule
+
+1. Run SIPHON as usual and answer the host questions.
+2. At the menu, choose **2** (schedule only) or **3** (run once now and schedule).
+3. Choose the shares and volumes as usual. Saved defaults and `all` work here too. The schedule scans exactly the share/volume pairs you pick now.
+4. Enter the time(s) to run each day, in 24-hour `HH:MM` format:
+
+   ```
+   Enter the time(s) to run the report each day, in 24-hour HH:MM format,
+   separated by commas (e.g. 06:00, 18:00). Times use this host's clock (EST).
+   Recommended: no more than 2 runs per day. Large shares can take hours to
+   scan, and a run is skipped if the previous one is still going.
+   Run times: 06:00, 18:00
+   ```
+
+   **No more than 2 runs per day are recommended.** If you enter more, SIPHON warns you and asks you to confirm.
+5. Choose the results folder for scheduled runs (press Enter to keep the current one). If it's under `/tmp`, SIPHON warns that it may be cleared on reboot and suggests a persistent folder such as `/var/tmp/siphon` or `~/siphon-results`.
+6. Confirm whether **results should be uploaded** as part of each scheduled run. You must answer `y` or `n`. If the host has no `upload` command, SIPHON says so and scheduled runs save results without uploading.
+7. Review the summary and confirm to install it:
+
+   ```
+   Summary:
+     Runs every day at: 06:00, 18:00 (EST)
+     Upload results:    yes
+     Results folder:    /var/tmp/siphon
+     Log file:          /home/jdoe/.hs_siphon_cron.log
+     Crontab entries:
+       0 6 * * * /usr/bin/python3 /opt/hs-siphon/hs-siphon.py --cron --schedule-file /home/jdoe/.hs_siphon_schedule.json >> /home/jdoe/.hs_siphon_cron.log 2>&1 # SIPHON scheduled report
+       0 18 * * * /usr/bin/python3 /opt/hs-siphon/hs-siphon.py --cron --schedule-file /home/jdoe/.hs_siphon_schedule.json >> /home/jdoe/.hs_siphon_cron.log 2>&1 # SIPHON scheduled report
+   Install this schedule in your crontab? (y/n): y
+   ```
+
+The schedule is added to your own user's crontab. Any other entries in your crontab are left alone.
+
+### What a scheduled run does
+
+- Cron runs `hs-siphon.py --cron`. There are no prompts, no banner and no host questions.
+- It runs the same scans as an interactive run, writes the same result files, compares them with the previous run and uploads them only if you said yes.
+- Its output is appended to the log file, `~/.hs_siphon_cron.log`, between "scheduled run started" and "scheduled run finished" lines.
+- If the previous scheduled run is still going, the new one is skipped and the log says `Previous scheduled run is still in progress - skipping this run.`
+- Cron jobs have a minimal `PATH`, so SIPHON records the full paths to Python, `hs` and `upload` when you set up the schedule.
+- tmux isn't needed for scheduled runs, because cron runs them independently of your login session. (On a DSX node you still need tmux to run SIPHON interactively, including to set up the schedule.)
+
+### Time zones
+
+Cron runs jobs on the host's system clock and time zone. SIPHON shows your session's time zone when it asks for run times; these are normally the same. If your session sets a different `TZ`, the job follows the system time zone.
+
+### Check, change or remove a schedule
+
+- **Check:** run SIPHON. The current schedule (times, upload setting, results folder, shares and crontab entries) is shown above the menu. You can also run `crontab -l`; SIPHON's lines end with `# SIPHON scheduled report`.
+- **Change:** run SIPHON and choose 2 or 3 again. The new schedule replaces the old one.
+- **Remove:** run SIPHON and choose 4. Result files and the log are kept.
+- **Don't move or rename `hs-siphon.py`** after scheduling, because the cron job runs it from where it was. If you move it, set up the schedule again.
+- The schedule scans the share/volume pairs it was set up with. Changing a share's saved default later doesn't change the schedule until you set it up again.
+
+Scheduling isn't available on Windows.
 
 ## Output
 
@@ -277,6 +355,7 @@ Set these environment variables before running SIPHON to change where files go:
 |---|---|---|
 | `HS_SUM_OUTDIR` | `/tmp` on macOS/Linux; your temp folder (`%TEMP%`) on Windows | Folder for result files. |
 | `HS_SUM_MAPFILE` | `.hs_sum_volume_map` in your home folder | Saved share-to-volume defaults. |
+| `HS_SIPHON_SCHEDULE` | `~/.hs_siphon_schedule.json` | Scheduled report settings (Linux/macOS). |
 | `NO_COLOR` | not set | Set to any value to turn off colored output. |
 
 Temp folders can be cleared (`/tmp` on reboot on many Linux systems, `%TEMP%` by disk cleanup on Windows), which erases the run history so the next run reports `Previous run: none`. To keep it, use a persistent folder:
@@ -300,12 +379,15 @@ py hs-siphon.py
 | `<HS_SUM_OUTDIR>/hs_sum_<share>__<volume>.txt` | Latest result for a share/volume pair. This is the file that gets uploaded. |
 | `<HS_SUM_OUTDIR>/hs_sum_<share>__<volume>.txt.prev` | The previous result, kept for comparison. |
 | `<HS_SUM_MAPFILE>` | Saved share-to-volume defaults. |
+| `~/.hs_siphon_schedule.json` | Scheduled report settings: run times, shares, results folder, upload choice. |
+| `~/.hs_siphon_schedule.json.lock` | Stops a scheduled run from starting while the previous one is still going. |
+| `~/.hs_siphon_cron.log` | Output of every scheduled run. It grows over time; delete or trim it whenever you like. |
 
 `<share>` is the last folder of the share path and `<volume>` is the volume name, with unsafe characters replaced by `_`, e.g. `hs_sum_LinuxHome__legacy-nas_ifs_data_Linux_LinuxHome.txt`.
 
 The "previous run" finish time comes from the result file's modification time, so don't edit or touch result files between runs.
 
-**Upgrading from earlier versions:** SIPHON 1.1.0 uses the same file names, formats and saved defaults as the 1.0.0 bash script, so your history and saved shares carry over. Result files from the original single-volume script (`hs_sum_<share>.txt`) are also picked up automatically on the first run for that share.
+**Upgrading from earlier versions:** SIPHON 1.1.0 and later use the same file names, formats and saved defaults as the 1.0.0 bash script, so your history and saved shares carry over. Result files from the original single-volume script (`hs_sum_<share>.txt`) are also picked up automatically on the first run for that share.
 
 ## Calculating throughput
 
@@ -333,11 +415,15 @@ Example from the output above: 1,040,530 files and 1,560.56 GB moved between 22:
 | `NOTE: 'upload' command not found` | The host has no `upload` command. Results are still saved in the output folder. |
 | `WARNING: value(s) INCREASED` | New or changed data is landing on the source volume, or the scan counted something different. Check for writes to the old storage. |
 | Garbled characters or `[1;36m` codes | The console doesn't support colors. Set `NO_COLOR=1`, or use Windows Terminal / PowerShell on Windows 10 or later. |
+| `NOTE: 'crontab' not found on this host - scheduling is not available` | Install cron (for example the `cron` or `cronie` package) to schedule reports, or run SIPHON by hand. |
+| A scheduled run didn't happen | Check `crontab -l` for lines ending `# SIPHON scheduled report`, check `~/.hs_siphon_cron.log`, and make sure `hs-siphon.py` hasn't been moved. The cron service must be running on the host. |
+| `Previous scheduled run is still in progress - skipping this run.` | The scans take longer than the gap between run times. Choose fewer or more widely spaced run times. |
 | `No input - exiting.` | Input ended at a prompt (Ctrl-D, Ctrl-Z then Enter on Windows, or a closed terminal). Re-run SIPHON. |
 
 ## Limitations and roadmap
 
-- SIPHON is interactive. The only command-line option that works is `-h` / `--help`. The other options in the script header (`--source`, `--target`, `-v`, `-w`, `-i`, `-l`) are planned but not implemented; if passed, they are ignored with a note.
+- SIPHON is interactive, apart from scheduled runs. The command-line options that work are `-h` / `--help`, and `--cron` with `--schedule-file` (used by the cron job). The other options in the script header (`--source`, `--target`, `-v`, `-w`, `-i`, `-l`) are planned but not implemented; if passed, they are ignored with a note.
+- Scheduling uses cron, so it's available on Linux and macOS only. There's one SIPHON schedule per user.
 - Throughput isn't calculated by the script itself; see [Calculating throughput](#calculating-throughput).
 - Scans run one after the other, not in parallel.
 - Volume names containing a single quote (`'`) aren't supported in the `hs sum` expression.
@@ -346,6 +432,7 @@ Example from the output above: 1,040,530 files and 1,560.56 GB moved between 22:
 
 | Version | Changes |
 |---|---|
+| 1.2.0 | Adds recurring reports via cron on Linux and macOS (including DSX nodes): run once now, schedule, or both; daily run times (no more than 2 per day recommended); upload choice for scheduled runs; overlap protection; log file; remove-schedule option. One-off runs unchanged. |
 | 1.1.0 | Rewritten in Python so SIPHON runs on Windows as well as macOS and Linux (Windows not yet fully tested). Same prompts, file names, formats and saved defaults as 1.0.0. Adds Windows drive/UNC path support, finding `hs` in pip's scripts folder, plain-text banner fallback and `NO_COLOR`. Documents that only Hammerspace personnel may run SIPHON on DSX nodes. Replaces `hs-siphon.sh`. |
 | 1.0.0 | First release as SIPHON (bash): any share path, volume discovery with `hs status volume`, multiple volumes per share, saved defaults, `all` shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional. |
 

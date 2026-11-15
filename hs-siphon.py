@@ -4,7 +4,7 @@
 # Open Source Data Migration Telemetry for Hammerspace
 # ==============================================================================
 # Project:         SIPHON (github.com/vjason1/hs-siphon)
-# Version:         1.1.0
+# Version:         1.2.0
 # License:         Apache-2.0 OR MIT (see LICENSE-APACHE and LICENSE-MIT)
 # Target Runtime:  Python 3.6+ on Windows, macOS or Linux, with the
 #                  Hammerspace Toolkit (hstk)
@@ -24,6 +24,10 @@
 #   -w, --watch           Run live curses/terminal progress monitor
 #   -i, --interval <SEC>  Poll frequency for metadata scans (default: 5)
 #   -l, --log-level <LVL> Set threshold: DEBUG, INFO, WARN, ERROR (default: INFO)
+#       --cron            Run the saved scheduled report without prompts
+#                         (this is what the cron job runs; Linux/macOS only)
+#       --schedule-file <FILE>  Schedule file to use with --cron
+#                         (default: ~/.hs_siphon_schedule.json)
 # ==============================================================================
 #
 # What it does:
@@ -31,6 +35,10 @@
 #   still have an instance on a selected storage volume, i.e. what is left to
 #   migrate off that volume. Results are saved, compared with the previous run,
 #   and uploaded.
+#
+#   Run it once interactively, or (on Linux/macOS, including Hammerspace DSX
+#   nodes) schedule the configured report to run every day at set times via
+#   cron. No more than 2 scheduled runs per day are recommended.
 #
 # Requirement: Hammerspace Toolkit (provides the 'hs' command).
 #   - Already installed on Hammerspace DSX nodes.
@@ -47,11 +55,15 @@
 #   ~/.hs_sum_volume_map      (override with HS_SUM_MAPFILE=/path)
 # Result files are written to /tmp, or the system temp folder on Windows
 # (override with HS_SUM_OUTDIR=/path).
+# Scheduled (cron) reports are saved in ~/.hs_siphon_schedule.json (override
+# with HS_SIPHON_SCHEDULE=/path) and log to ~/.hs_siphon_cron.log.
 # ==============================================================================
 
 import datetime
+import json
 import os
 import re
+import shlex
 import shutil
 import socket
 import subprocess
@@ -59,13 +71,17 @@ import sys
 import sysconfig
 import tempfile
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 IS_WINDOWS = os.name == "nt"
 
 # --- [ Settings ] ------------------------------------------------------------
 DEFAULT_OUTDIR = tempfile.gettempdir() if IS_WINDOWS else "/tmp"
 OUTDIR = os.environ.get("HS_SUM_OUTDIR") or DEFAULT_OUTDIR
 MAPFILE = os.environ.get("HS_SUM_MAPFILE") or os.path.join(os.path.expanduser("~"), ".hs_sum_volume_map")
+SCHEDFILE = os.environ.get("HS_SIPHON_SCHEDULE") or os.path.join(os.path.expanduser("~"), ".hs_siphon_schedule.json")
+CRON_LOG = os.path.join(os.path.expanduser("~"), ".hs_siphon_cron.log")
+CRON_MARKER = "# SIPHON scheduled report"
+RECOMMENDED_MAX_RUNS = 2
 
 SUM_EXPR = ("IS_FILE AND NOT ISNA(INSTANCES[|VOLUME=STORAGE_VOLUME('{v}')])>0 AND "
             "ROWS(INSTANCES[|VOLUME=STORAGE_VOLUME('{v}')])>0 ?{{1FILE/FILES,SIZE/GBYTES}}")
@@ -362,7 +378,7 @@ def choose_volumes(hs, share):
 
 # --- [ Preflight ] -----------------------------------------------------------
 def preflight():
-    """Check where we're running; return (hs_path, upload_path_or_None)."""
+    """Check where we're running; return (hs_path, upload_path_or_None, is_hs_node)."""
     print("=" * 66)
     print(" Requires the Hammerspace Toolkit ('hs' command).")
     print("   - Already installed on Hammerspace DSX nodes.")
@@ -428,11 +444,11 @@ def preflight():
     except OSError as e:
         print("ERROR: cannot create output folder {}: {}".format(OUTDIR, e))
         sys.exit(1)
-    return hs, upload
+    return hs, upload, hs_node
 
 
 # --- [ Choose shares & volumes ] ---------------------------------------------
-def select_targets(hs):
+def select_targets(hs, blank_label="start scanning"):
     run_list = []
 
     def add(share, volume):
@@ -456,7 +472,7 @@ def select_targets(hs):
         print()
         prompt = "Enter a Hammerspace share path"
         if run_list:
-            prompt = "Enter another share path (blank = start scanning)"
+            prompt = "Enter another share path (blank = {})".format(blank_label)
         if load_mappings():
             prompt += " ['all' = every saved share]"
         share = ask(prompt + ": ").strip()
@@ -508,7 +524,7 @@ def select_targets(hs):
 
 
 # --- [ Run scans ] -----------------------------------------------------------
-def run_scans(hs, upload, run_list):
+def run_scans(hs, upload, run_list, no_upload_note="(Not uploaded - 'upload' command not available on this host.)"):
     summary = []
     print()
     print("Starting {} scan(s), one after the other.".format(len(run_list)))
@@ -577,6 +593,7 @@ def run_scans(hs, upload, run_list):
 
         # Upload the result file
         if upload:
+            sys.stdout.flush()      # keep the log in order when output is redirected (cron)
             try:
                 rc = subprocess.run([upload, os.path.basename(outfile)], cwd=OUTDIR).returncode
             except OSError:
@@ -592,11 +609,320 @@ def run_scans(hs, upload, run_list):
     print()
     print("Done. Results saved in {}".format(os.path.join(OUTDIR, "hs_sum_*.txt")))
     if not upload:
-        print("(Not uploaded - 'upload' command not available on this host.)")
+        print(no_upload_note)
+
+
+# --- [ Scheduling (cron) ] ---------------------------------------------------
+def cron_available():
+    """Scheduling needs a non-Windows host with the crontab command."""
+    return (not IS_WINDOWS) and shutil.which("crontab") is not None
+
+
+def read_crontab():
+    """Current user's crontab text ('' if there is none)."""
+    try:
+        res = subprocess.run(["crontab", "-l"], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             universal_newlines=True)
+    except OSError:
+        return ""
+    return res.stdout if res.returncode == 0 else ""
+
+
+def write_crontab(text):
+    res = subprocess.run(["crontab", "-"], input=text, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT, universal_newlines=True)
+    if res.returncode != 0:
+        raise RuntimeError(res.stdout.strip() or "crontab exited with status {}".format(res.returncode))
+
+
+def siphon_cron_lines(text=None):
+    text = read_crontab() if text is None else text
+    return [l for l in text.splitlines() if CRON_MARKER in l]
+
+
+def load_schedule(path=None):
+    try:
+        with open(path or SCHEDFILE, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def parse_times(text):
+    """'6:00, 18:30' -> [(6, 0), (18, 30)] sorted and de-duplicated; raises ValueError."""
+    times = set()
+    for tok in re.split(r"[\s,;]+", text.strip()):
+        if not tok:
+            continue
+        m = re.match(r"^(\d{1,2}):(\d{2})$", tok)
+        if not m or int(m.group(1)) > 23 or int(m.group(2)) > 59:
+            raise ValueError("'{}' is not a valid 24-hour time (HH:MM)".format(tok))
+        times.add((int(m.group(1)), int(m.group(2))))
+    if not times:
+        raise ValueError("enter at least one time")
+    return sorted(times)
+
+
+def fmt_times(times):
+    return ", ".join("{:02d}:{:02d}".format(h, m) for h, m in times)
+
+
+def local_tz():
+    try:
+        return datetime.datetime.now().astimezone().tzname() or "local time"
+    except Exception:
+        return "local time"
+
+
+def cron_quote(arg):
+    """Quote an argument for /bin/sh in a crontab line ('%' is special to cron)."""
+    return shlex.quote(arg).replace("%", "\\%")
+
+
+def show_schedule(sched, lines):
+    print("Current SIPHON schedule:")
+    if sched:
+        print("  Runs every day at: {} ({})".format(fmt_times([tuple(t) for t in sched.get("times", [])]),
+                                                    sched.get("timezone", "local time")))
+        print("  Upload results:    {}".format("yes" if sched.get("upload") else "no"))
+        print("  Results folder:    {}".format(sched.get("outdir")))
+        print("  Log file:          {}".format(sched.get("log")))
+        print("  Shares:")
+        for s, v in sched.get("run_list", []):
+            print("    {}  ->  {}".format(s, v))
+    if lines:
+        print("  Crontab entries:")
+        for l in lines:
+            print("    {}".format(l))
+    else:
+        print("  (No SIPHON entries found in your crontab - the schedule is not active.)")
+
+
+def choose_mode():
+    """Ask whether to run now, schedule, both, or remove the schedule."""
+    if IS_WINDOWS:
+        return "now"
+    if not cron_available():
+        print()
+        print("NOTE: 'crontab' not found on this host - scheduling is not available; running once now.")
+        return "now"
+
+    sched, lines = load_schedule(), siphon_cron_lines()
+    if sched or lines:
+        print()
+        show_schedule(sched, lines)
+
+    options = [("now", "Run the report once now"),
+               ("schedule", "Schedule the report to run every day (cron)"),
+               ("both", "Run once now AND schedule it")]
+    if sched or lines:
+        options.append(("remove", "Remove the existing schedule"))
+    print()
+    print("What would you like to do?")
+    for i, (_, label) in enumerate(options, 1):
+        print("  {}) {}".format(i, label))
+    while True:
+        sel = ask("Choice [1]: ").strip() or "1"
+        if sel.isdigit() and 1 <= int(sel) <= len(options):
+            return options[int(sel) - 1][0]
+        print("  Please enter a number from 1 to {}.".format(len(options)))
+
+
+def prompt_times():
+    print()
+    print("Enter the time(s) to run the report each day, in 24-hour HH:MM format,")
+    print("separated by commas (e.g. 06:00, 18:00). Times use this host's clock ({}).".format(local_tz()))
+    print("Recommended: no more than {} runs per day. Large shares can take hours to".format(RECOMMENDED_MAX_RUNS))
+    print("scan, and a run is skipped if the previous one is still going.")
+    while True:
+        try:
+            times = parse_times(ask("Run times: "))
+        except ValueError as e:
+            print("  {}.".format(str(e).capitalize()))
+            continue
+        if len(times) > RECOMMENDED_MAX_RUNS:
+            print("  WARNING: {} runs per day is more than the recommended {}.".format(len(times), RECOMMENDED_MAX_RUNS))
+            if not ask_yn("  Use {} runs per day anyway?".format(len(times)), "n"):
+                continue
+        return times
+
+
+def prompt_outdir():
+    print()
+    print("Scheduled results folder (Enter = {}):".format(OUTDIR))
+    if os.path.abspath(OUTDIR).startswith(("/tmp", "/var/tmp/systemd")):
+        print("  Note: {} may be cleared on reboot, which erases the run history.".format(OUTDIR))
+        print("  A folder such as /var/tmp/siphon or ~/siphon-results keeps it.")
+    while True:
+        d = ask("Results folder: ").strip() or OUTDIR
+        d = os.path.abspath(os.path.expanduser(d))
+        try:
+            os.makedirs(d, exist_ok=True)
+            return d
+        except OSError as e:
+            print("  Cannot use {}: {}".format(d, e))
+
+
+def schedule_setup(hs, upload, run_list):
+    """Prompt for run times, folder and upload choice; save the schedule and install it in crontab."""
+    print()
+    print("=== Schedule a recurring report (cron) ===")
+    print("The scheduled report scans the share/volume pairs you just selected:")
+    for s, v in run_list:
+        print("  {}  ->  {}".format(s, v))
+
+    times = prompt_times()
+    outdir = prompt_outdir()
+
+    print()
+    if upload:
+        do_upload = ask_yn("Upload the results ({}) as part of each scheduled run?".format(upload))
+    else:
+        do_upload = False
+        print("NOTE: 'upload' command not found on this host - scheduled runs will save results without uploading.")
+
+    script = os.path.abspath(__file__)
+    log = CRON_LOG
+    sched = {
+        "version": VERSION,
+        "created": now(),
+        "host": socket.gethostname(),
+        "times": [list(t) for t in times],
+        "timezone": local_tz(),
+        "run_list": [list(p) for p in run_list],
+        "upload": do_upload,
+        "upload_cmd": upload if do_upload else None,
+        "hs_cmd": hs,
+        "outdir": outdir,
+        "log": log,
+        "python": sys.executable,
+        "script": script,
+    }
+    cmd = "{} {} --cron --schedule-file {} >> {} 2>&1".format(
+        cron_quote(sys.executable), cron_quote(script), cron_quote(SCHEDFILE), cron_quote(log))
+    new_lines = ["{} {} * * * {} {}".format(m, h, cmd, CRON_MARKER) for h, m in times]
+
+    print()
+    print("Summary:")
+    print("  Runs every day at: {} ({})".format(fmt_times(times), local_tz()))
+    print("  Upload results:    {}".format("yes" if do_upload else "no"))
+    print("  Results folder:    {}".format(outdir))
+    print("  Log file:          {}".format(log))
+    print("  Crontab entries:")
+    for l in new_lines:
+        print("    {}".format(l))
+    if siphon_cron_lines():
+        print("  (These replace your existing SIPHON schedule.)")
+    if script.startswith(("/tmp/", "/var/tmp/")):
+        print("  WARNING: the script is in a temporary folder; the schedule stops working if it is removed.")
+    if not ask_yn("Install this schedule in your crontab?"):
+        print("Schedule not installed.")
+        return False
+
+    others = [l for l in read_crontab().splitlines() if CRON_MARKER not in l]
+    with open(SCHEDFILE + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(sched, f, indent=2)
+    os.replace(SCHEDFILE + ".tmp", SCHEDFILE)
+    try:
+        write_crontab("\n".join(others + new_lines) + "\n")
+    except (OSError, RuntimeError) as e:
+        print("ERROR: could not update your crontab: {}".format(e))
+        return False
+
+    if len(siphon_cron_lines()) != len(new_lines):
+        print("WARNING: the schedule was saved, but the crontab entries could not be confirmed. Check with: crontab -l")
+        return False
+    print()
+    print("Scheduled. SIPHON will run every day at {} ({}).".format(fmt_times(times), local_tz()))
+    print("  Schedule file: {}".format(SCHEDFILE))
+    print("  Log file:      {}".format(log))
+    print("Keep hs-siphon.py at {} - the cron job runs it from there.".format(script))
+    print("To change or remove the schedule, run SIPHON again and choose that option.")
+    return True
+
+
+def remove_schedule():
+    lines = siphon_cron_lines()
+    if not ask_yn("Remove the SIPHON schedule from your crontab?"):
+        print("Schedule kept.")
+        return
+    if lines:
+        others = [l for l in read_crontab().splitlines() if CRON_MARKER not in l]
+        try:
+            write_crontab("\n".join(others) + "\n" if others else "")
+        except (OSError, RuntimeError) as e:
+            print("ERROR: could not update your crontab: {}".format(e))
+            return
+    try:
+        os.remove(SCHEDFILE)
+    except OSError:
+        pass
+    print("Schedule removed. Existing result files and the log ({}) were kept.".format(CRON_LOG))
+
+
+def run_cron(schedfile):
+    """Non-interactive scheduled run (called by cron)."""
+    global OUTDIR
+    print()
+    print("#" * 72)
+    print("SIPHON {} scheduled run started {} on {}".format(VERSION, now(), socket.gethostname()))
+    sched = load_schedule(schedfile)
+    if not sched or not sched.get("run_list"):
+        print("ERROR: no schedule found in {}. Run SIPHON interactively to set one up.".format(schedfile))
+        return 1
+
+    # Skip this run if the previous scheduled run is still going
+    lock = open(schedfile + ".lock", "w")
+    try:
+        import fcntl
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (OSError, IOError):
+        print("Previous scheduled run is still in progress - skipping this run.")
+        return 0
+
+    hs = sched.get("hs_cmd")
+    if not hs or not os.path.isfile(hs):
+        hs = find_command("hs")
+    if not hs:
+        print("ERROR: 'hs' command not found (Hammerspace Toolkit). Install it with: pip install hstk")
+        return 1
+
+    upload, note = None, "(Not uploaded - upload is turned off for scheduled runs.)"
+    if sched.get("upload"):
+        upload = sched.get("upload_cmd")
+        if not upload or not os.path.isfile(upload):
+            upload = find_command("upload")
+        if not upload:
+            note = "(Not uploaded - 'upload' command not found on this host.)"
+
+    OUTDIR = sched.get("outdir") or OUTDIR
+    try:
+        os.makedirs(OUTDIR, exist_ok=True)
+    except OSError as e:
+        print("ERROR: cannot create output folder {}: {}".format(OUTDIR, e))
+        return 1
+
+    run_scans(hs, upload, [tuple(p) for p in sched["run_list"]], no_upload_note=note)
+    print("SIPHON scheduled run finished {}".format(now()))
+    return 0
 
 
 # --- [ Entry Point / Execution ] ---------------------------------------------
 def main(argv):
+    # Scheduled (cron) run: no banner, no prompts
+    if "--cron" in argv:
+        schedfile = SCHEDFILE
+        if "--schedule-file" in argv:
+            i = argv.index("--schedule-file")
+            if i + 1 >= len(argv):
+                print("ERROR: --schedule-file needs a file path")
+                return 2
+            schedfile = argv[i + 1]
+        if IS_WINDOWS:
+            print("ERROR: scheduled runs are only supported on Linux and macOS.")
+            return 2
+        return run_cron(schedfile)
+
     # Render the banner to the terminal upon execution
     show_banner()
 
@@ -604,12 +930,19 @@ def main(argv):
         show_help()
         return 0
     if argv:
-        print("NOTE: command-line options other than -h/--help are not implemented yet; ignoring: {}\n".format(" ".join(argv)))
+        print("NOTE: command-line options other than -h/--help and --cron are not implemented yet; ignoring: {}\n".format(" ".join(argv)))
 
     try:
-        hs, upload = preflight()
-        run_list = select_targets(hs)
-        run_scans(hs, upload, run_list)
+        hs, upload, _hs_node = preflight()
+        mode = choose_mode()
+        if mode == "remove":
+            remove_schedule()
+            return 0
+        run_list = select_targets(hs, "start scanning" if mode != "schedule" else "continue to scheduling")
+        if mode in ("schedule", "both"):
+            schedule_setup(hs, upload, run_list)
+        if mode in ("now", "both"):
+            run_scans(hs, upload, run_list)
     except InputClosed:
         print()
         print("No input - exiting.")
