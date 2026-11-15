@@ -1,0 +1,614 @@
+<meta charset="utf-8">
+<title>SIPHON Confluence Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single white document column under a slim copy toolbar.
+   Deliberately one light theme: the page imitates the Confluence page it is
+   pasted into, and hand-copied text then never carries dark-theme colors. */
+:root {
+  --paper: #ffffff;
+  --ink: #1b2630;
+  --muted: #586776;
+  --rule: #d6dde5;
+  --wash: #f0f4f7;
+  --accent: #0a6a86;
+  --accent-ink: #ffffff;
+  --ok: #1f7a4d;
+  --font-body: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--wash); border-bottom: 1px solid var(--rule);
+  padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--wash); }
+.bar-inner { max-width: 880px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
+.bar h1 { font-size: 16px; margin: 0; font-weight: 700; }
+.bar .ver { color: var(--muted); font-weight: 400; }
+.bar .spacer { flex: 1 1 auto; }
+button { font: 600 14px/1 var(--font-body); background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 6px; padding: 10px 16px; cursor: pointer; }
+button.secondary { background: var(--paper); color: var(--accent); border: 1px solid var(--accent); }
+button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+#status { min-height: 1.2em; color: var(--ok); font-weight: 600; }
+.wrap { max-width: 880px; margin: 0 auto; padding-block: 24px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.how { border: 1px solid var(--rule); border-radius: 8px; background: var(--wash); padding: 16px 20px; margin-bottom: 32px; }
+.how h2 { font-size: 15px; margin: 0 0 8px; }
+.how ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.how kbd { font-family: var(--font-mono); font-size: 12px; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--paper); }
+article { min-width: 0; overflow-wrap: anywhere; }
+article pre, article table { overflow-wrap: normal; }
+article h2 { font-size: 24px; line-height: 1.25; margin: 40px 0 12px; text-wrap: balance; }
+article h3 { font-size: 18px; margin: 28px 0 8px; text-wrap: balance; }
+article p, article li { max-width: 72ch; }
+article a { color: var(--accent); }
+article hr { border: 0; border-top: 2px solid var(--rule); margin: 40px 0 0; }
+article blockquote { margin: 16px 0; padding: 10px 16px; border-left: 4px solid var(--accent); background: var(--wash); }
+article blockquote p { margin: 0; }
+article code { font-family: var(--font-mono); font-size: 0.88em; background: var(--wash); padding: 1px 4px; border-radius: 3px; }
+article pre { font-family: var(--font-mono); font-size: 13px; line-height: 1.45; background: var(--wash); border: 1px solid var(--rule); border-radius: 6px; padding: 12px 14px; overflow-x: auto; }
+article pre code { background: none; padding: 0; font-size: inherit; }
+article table { border-collapse: collapse; margin: 12px 0; font-size: 14px; display: block; overflow-x: auto; max-width: 100%; }
+article th, article td { border: 1px solid var(--rule); padding: 6px 10px; text-align: left; vertical-align: top; }
+article th { background: var(--wash); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="bar"><div class="bar-inner">
+  <h1>SIPHON <span class="ver">v1.2.0 · guide for Confluence</span></h1>
+  <span class="spacer"></span>
+  <span id="status" role="status" aria-live="polite"></span>
+  <button id="copy" type="button">Copy for Confluence</button>
+  <button id="select" type="button" class="secondary">Select all</button>
+</div></div>
+
+<div class="wrap">
+  <section class="how" aria-label="How to paste into Confluence">
+    <h2>Put this guide into Confluence</h2>
+    <ol>
+      <li>Click <strong>Copy for Confluence</strong>. (If it says copying isn't allowed, click <strong>Select all</strong>, then press <kbd>Ctrl</kbd>+<kbd>C</kbd> or <kbd>⌘</kbd>+<kbd>C</kbd>.)</li>
+      <li>In Confluence, create a page and give it a title, for example <em>SIPHON</em>.</li>
+      <li>Click in the page body and paste with <kbd>Ctrl</kbd>+<kbd>V</kbd> or <kbd>⌘</kbd>+<kbd>V</kbd>.</li>
+      <li>Optional: put the cursor at the top of the page, type <kbd>/toc</kbd> and choose <strong>Table of contents</strong>.</li>
+      <li>Publish.</li>
+    </ol>
+  </section>
+
+  <article id="doc">
+<p><strong>S.I.P.H.O.N. — Storage Ingestion Progress &amp; High-volume Orchestration Navigator</strong><br> Data migration telemetry for Hammerspace.</p>
+<p>SIPHON tracks how much data is still left to migrate off a storage volume behind a Hammerspace share. For each share and volume you pick, it counts the files (and GB) that still have an instance on that volume. It saves the result, compares it with the previous run, and uploads it. Run it several times a day, by hand or on a schedule (cron on Linux and macOS): the counts should go down as the migration progresses, and the difference between runs gives you your throughput.</p>
+<p>The script is <code>hs-siphon.py</code>; the tool is called SIPHON. It runs on <strong>Windows, macOS and Linux</strong>.</p>
+<blockquote>
+<p><strong>Windows support has not been fully tested yet.</strong> SIPHON is written to run on Windows, but so far it has only been tested on Linux. If you run it on Windows, check the results against a known share first, and please report any problems to the SIPHON maintainers.</p>
+</blockquote>
+<blockquote>
+<p><strong>Who runs SIPHON where:</strong> only <strong>Hammerspace personnel</strong> may run SIPHON on a Hammerspace node (DSX). <strong>End users</strong> should run it from their own client machine, with the Hammerspace Toolkit installed and the share mounted or mapped. Nobody should run it on an Anvil.</p>
+</blockquote>
+<hr />
+<h2 id="how-it-works">How it works</h2>
+<p>Hammerspace keeps one or more <em>instances</em> of each file on its storage volumes. When you migrate a share off an old storage system, files gain an instance on the new volume and eventually lose the instance on the old one. SIPHON counts the files under a share that <strong>still have an instance on the source volume</strong>:</p>
+<pre><code>hs sum -e &quot;IS_FILE AND NOT ISNA(INSTANCES[|VOLUME=STORAGE_VOLUME(&#39;&lt;volume&gt;&#39;)])&gt;0 AND ROWS(INSTANCES[|VOLUME=STORAGE_VOLUME(&#39;&lt;volume&gt;&#39;)])&gt;0 ?{1FILE/FILES,SIZE/GBYTES}&quot; &lt;share path&gt;</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th>Part</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>IS_FILE</code></td>
+<td>Count files only, not directories.</td>
+</tr>
+<tr class="even">
+<td><code>INSTANCES[|VOLUME=STORAGE_VOLUME('&lt;volume&gt;')]</code></td>
+<td>The file's instances on the chosen volume.</td>
+</tr>
+<tr class="odd">
+<td><code>NOT ISNA(...)&gt;0 AND ROWS(...)&gt;0</code></td>
+<td>The file has at least one instance on that volume.</td>
+</tr>
+<tr class="even">
+<td><code>?{1FILE/FILES,SIZE/GBYTES}</code></td>
+<td>For each match, add 1 to the file count and its size (in GB) to the total.</td>
+</tr>
+</tbody>
+</table>
+<p>The result is a pair, <code>{files, GB}</code>, for example:</p>
+<pre><code>{48479703, 148164.72295650732}</code></pre>
+<p>The first value is the number of files left to migrate; the second is the space they use, in GB.</p>
+<p>SIPHON calls <code>hs</code> directly (not through a shell), so the expression works the same on Windows, macOS and Linux.</p>
+<h2 id="requirements">Requirements</h2>
+<ul>
+<li><strong>Python 3.6 or later.</strong> The Hammerspace Toolkit is itself a Python package, so any machine that can run <code>hs</code> already has Python.</li>
+<li><strong>Hammerspace Toolkit</strong> (<code>hstk</code>), which provides the <code>hs</code> command.
+<ul>
+<li>Already installed on Hammerspace DSX nodes.</li>
+<li>On any other host (Windows, macOS, Linux), install it with pip:
+<pre><code>pip install hstk</code></pre></li>
+</ul></li>
+<li><strong>The share mounted or mapped</strong> on your client: a mapped drive or UNC path on Windows, a mount point on macOS or Linux.</li>
+<li><strong>tmux</strong> on DSX nodes (Hammerspace personnel). Scans of large shares can take hours, and SIPHON must run inside a tmux session you started so a dropped connection doesn't kill it.</li>
+<li><strong>cron</strong> (optional, Linux and macOS, including DSX nodes). Needed only to schedule recurring reports; SIPHON uses the <code>crontab</code> command.</li>
+<li><strong><code>upload</code></strong> (optional). If the Hammerspace <code>upload</code> command is on the host, SIPHON uploads each result file. If it isn't (typical on a client), results are saved locally and the upload is skipped.</li>
+</ul>
+<h2 id="where-to-run-it">Where to run it</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Host</th>
+<th>Who</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Your own client machine (Windows, macOS, Linux)</td>
+<td><strong>End users</strong></td>
+<td>Install the toolkit with <code>pip install hstk</code>. Point SIPHON at the share's mapped drive, UNC path or mount point.</td>
+</tr>
+<tr class="even">
+<td>Hammerspace DSX node</td>
+<td><strong>Hammerspace personnel only</strong></td>
+<td>Toolkit already installed. Must be run inside tmux; SIPHON checks and exits if it isn't.</td>
+</tr>
+<tr class="odd">
+<td>Hammerspace Anvil</td>
+<td><strong>Nobody</strong></td>
+<td>SIPHON exits if you say you're on an Anvil.</td>
+</tr>
+</tbody>
+</table>
+<p>SIPHON always asks which kind of host you're on at startup; it can't detect this reliably by itself.</p>
+<h2 id="installation">Installation</h2>
+<p>Copy <code>hs-siphon.py</code> to the host you'll run it from. It's a single file; it needs only Python and the Hammerspace Toolkit.</p>
+<p>On macOS and Linux you can also make it executable so you can run <code>./hs-siphon.py</code>:</p>
+<pre><code>chmod +x hs-siphon.py</code></pre>
+<h2 id="quick-start">Quick start</h2>
+<p><strong>End users on Windows</strong> (Command Prompt or PowerShell; not yet fully tested, see the note at the top):</p>
+<pre><code>pip install hstk
+py hs-siphon.py</code></pre>
+<p>(Use <code>python hs-siphon.py</code> if the <code>py</code> launcher isn't installed.) Answer the prompts: not an Anvil, not a DSX node, then enter the share's mapped drive or UNC path, for example <code>Z:\Projects</code> or <code>\\fileserver\Projects</code>.</p>
+<p><strong>End users on macOS or Linux:</strong></p>
+<pre><code>pip install hstk
+python3 hs-siphon.py</code></pre>
+<p>Enter the share's mount point, for example <code>/Volumes/Projects</code>.</p>
+<p>Then pick the source volume from the list and let it scan. Keep the window open, and the computer awake, until the scans finish. On macOS or Linux you can run it inside tmux or screen so it survives a closed terminal.</p>
+<p><strong>Hammerspace personnel, on a DSX node:</strong></p>
+<pre><code>tmux new -s siphon          # start your own tmux session
+python3 hs-siphon.py</code></pre>
+<p>Answer the prompts: not an Anvil, yes a DSX node, then enter a share path such as <code>/mnt/smb-data-portal/Projects</code>. Detach from tmux with <code>Ctrl-b</code> then <code>d</code>, and reattach later with <code>tmux attach -t siphon</code>.</p>
+<p>To re-scan everything you've set up before, type <code>all</code> at the share prompt.</p>
+<h2 id="walkthrough">Walkthrough</h2>
+<h3 id="1-banner-and-requirements">1. Banner and requirements</h3>
+<p>SIPHON prints its banner and a short summary of the requirements. (On a console that can't show the banner's box-drawing characters, it prints a plain-text version.)</p>
+<h3 id="2-host-check">2. Host check</h3>
+<pre><code>Current host: laptop-042
+Are you running this on a Hammerspace Anvil? (y/n): n
+Are you running this on a Hammerspace DSX node? (y/n): n
+Client host: the Hammerspace Toolkit must be installed (pip install hstk).
+Keep this window open (and the computer awake) until the scans finish.</code></pre>
+<ul>
+<li><strong>Anvil:</strong> SIPHON prints an error and exits.</li>
+<li><strong>DSX node</strong> (Hammerspace personnel only): SIPHON reminds you of this and checks that it's inside tmux. If not, it exits and tells you to start a tmux session and re-run.</li>
+<li><strong>Neither:</strong> SIPHON treats the host as an end-user client.</li>
+</ul>
+<p>In every case, if the <code>hs</code> command can't be found, SIPHON exits. On a client it shows <code>pip install hstk</code>. SIPHON looks for <code>hs</code> on your <code>PATH</code> and in Python's scripts folder, where pip installs it.</p>
+<h3 id="3-run-now-or-schedule">3. Run now or schedule</h3>
+<p>On Linux and macOS, SIPHON asks what you want to do. If a schedule already exists, it's shown first.</p>
+<pre><code>What would you like to do?
+  1) Run the report once now
+  2) Schedule the report to run every day (cron)
+  3) Run once now AND schedule it
+  4) Remove the existing schedule
+Choice [1]:</code></pre>
+<p>Press <strong>Enter</strong> to run once now, exactly as in earlier versions. Option 4 appears only when a schedule exists. See Scheduling recurring reports (cron) for options 2–4. On Windows, or on a host without <code>crontab</code>, there's no menu and SIPHON runs once.</p>
+<h3 id="4-choose-a-share">4. Choose a share</h3>
+<pre><code>Share path examples:
+  DSX:             /mnt/smb-data-portal/&lt;sharename&gt;/&lt;optional/subfolder/path&gt;
+  Windows client:  the share&#39;s mapped drive or UNC path (e.g. Z:\Projects, \\server\Projects)
+  Mac/Linux client: the share&#39;s mount point (e.g. /Volumes/Projects, /mnt/projects)
+
+Enter a Hammerspace share path: Z:\Linux\LinuxHome</code></pre>
+<p>You can point at a whole share or a subfolder of one. Trailing slashes and surrounding quotes (from a pasted path) are ignored. If the path isn't a folder on this machine, SIPHON warns you and asks whether to use it anyway.</p>
+<h3 id="5-choose-the-volumes">5. Choose the volume(s)</h3>
+<p>If this share has a saved default (see Saved defaults), SIPHON offers to reuse it. Otherwise it runs <code>hs status volume &lt;share&gt;</code> and lists every volume connected to the share:</p>
+<pre><code>Volumes connected to Z:\Linux\LinuxHome:
+     1) dsx01.example.com::/hsvol0
+     2) dsx02.example.com::/hsvol0
+     3) objectstore::/backing001
+     4) legacy-nas::/ifs/data/Shared/Projects
+   * 5) legacy-nas::/ifs/data/Linux/LinuxHome
+     6) Data Mover 1073741860
+  (* = suggested match for &#39;LinuxHome&#39;)
+
+Select the volume(s) to measure migration progress from.
+  Enter numbers separated by spaces or commas (e.g. 6  or  4,6).
+  Press Enter to use the suggested: 5
+  &#39;m&#39; = type a volume name manually, &#39;s&#39; = skip this share
+Selection:</code></pre>
+<ul>
+<li>Volumes whose path ends in the same folder name as the share are starred (<code>*</code>). Press <strong>Enter</strong> to pick the starred ones.</li>
+<li>Enter one or more numbers (<code>5</code>, <code>4 5</code> or <code>4,5</code>) to pick volumes yourself. Each selected volume gets its own scan.</li>
+<li>Enter <strong><code>m</code></strong> to type a volume name that isn't in the list, or <strong><code>s</code></strong> to skip this share.</li>
+<li>If <code>hs status volume</code> returns no volumes (for example, the path isn't on a Hammerspace share), SIPHON lets you type a volume name or skip.</li>
+</ul>
+<p>Your choice is saved as the default for that share.</p>
+<h3 id="6-add-more-shares">6. Add more shares</h3>
+<pre><code>Scan list so far:
+  Z:\Linux\LinuxHome  -&gt;  legacy-nas::/ifs/data/Linux/LinuxHome
+Add another share path? (y/N):</code></pre>
+<p>Answer <code>y</code> to add another share, or press Enter to start scanning. At the share prompt you can also type <strong><code>all</code></strong> to queue every saved share/volume pair.</p>
+<h3 id="7-scans">7. Scans</h3>
+<p>SIPHON runs one scan per share/volume pair, one after the other. Each result is printed, saved, compared with the previous run and uploaded (if <code>upload</code> is available). A summary table is printed at the end:</p>
+<pre><code>================================ Summary ================================
+Share                                         Volume                                     Files  GB
+/mnt/smb-data-portal/Linux/LinuxHome          legacy-nas::/ifs/data/Linux/LinuxHome      114123646 163144.1864172597
+/mnt/smb-data-portal/Projects                 legacy-nas::/ifs/data/Shared/Projects      90629886 481750.18214662647
+
+Done. Results saved in /tmp/hs_sum_*.txt</code></pre>
+<p>If a scan fails, the error is recorded in that share's result file and the remaining scans still run.</p>
+<h2 id="scheduling-recurring-reports-cron">Scheduling recurring reports (cron)</h2>
+<p>On Linux and macOS, including Hammerspace DSX nodes (Hammerspace personnel only), SIPHON can add a cron job that runs your report automatically every day at the times you choose. One-off runs still work exactly as before.</p>
+<h3 id="set-up-a-schedule">Set up a schedule</h3>
+<ol type="1">
+<li><p>Run SIPHON as usual and answer the host questions.</p></li>
+<li><p>At the menu, choose <strong>2</strong> (schedule only) or <strong>3</strong> (run once now and schedule).</p></li>
+<li><p>Choose the shares and volumes as usual. Saved defaults and <code>all</code> work here too. The schedule scans exactly the share/volume pairs you pick now.</p></li>
+<li><p>Enter the time(s) to run each day, in 24-hour <code>HH:MM</code> format:</p>
+<pre><code>Enter the time(s) to run the report each day, in 24-hour HH:MM format,
+separated by commas (e.g. 06:00, 18:00). Times use this host&#39;s clock (EST).
+Recommended: no more than 2 runs per day. Large shares can take hours to
+scan, and a run is skipped if the previous one is still going.
+Run times: 06:00, 18:00</code></pre>
+<p><strong>No more than 2 runs per day are recommended.</strong> If you enter more, SIPHON warns you and asks you to confirm.</p></li>
+<li><p>Choose the results folder for scheduled runs (press Enter to keep the current one). If it's under <code>/tmp</code>, SIPHON warns that it may be cleared on reboot and suggests a persistent folder such as <code>/var/tmp/siphon</code> or <code>~/siphon-results</code>.</p></li>
+<li><p>Confirm whether <strong>results should be uploaded</strong> as part of each scheduled run. You must answer <code>y</code> or <code>n</code>. If the host has no <code>upload</code> command, SIPHON says so and scheduled runs save results without uploading.</p></li>
+<li><p>Review the summary and confirm to install it:</p>
+<pre><code>Summary:
+  Runs every day at: 06:00, 18:00 (EST)
+  Upload results:    yes
+  Results folder:    /var/tmp/siphon
+  Log file:          /home/jdoe/.hs_siphon_cron.log
+  Crontab entries:
+    0 6 * * * /usr/bin/python3 /opt/hs-siphon/hs-siphon.py --cron --schedule-file /home/jdoe/.hs_siphon_schedule.json &gt;&gt; /home/jdoe/.hs_siphon_cron.log 2&gt;&amp;1 # SIPHON scheduled report
+    0 18 * * * /usr/bin/python3 /opt/hs-siphon/hs-siphon.py --cron --schedule-file /home/jdoe/.hs_siphon_schedule.json &gt;&gt; /home/jdoe/.hs_siphon_cron.log 2&gt;&amp;1 # SIPHON scheduled report
+Install this schedule in your crontab? (y/n): y</code></pre></li>
+</ol>
+<p>The schedule is added to your own user's crontab. Any other entries in your crontab are left alone.</p>
+<h3 id="what-a-scheduled-run-does">What a scheduled run does</h3>
+<ul>
+<li>Cron runs <code>hs-siphon.py --cron</code>. There are no prompts, no banner and no host questions.</li>
+<li>It runs the same scans as an interactive run, writes the same result files, compares them with the previous run and uploads them only if you said yes.</li>
+<li>Its output is appended to the log file, <code>~/.hs_siphon_cron.log</code>, between "scheduled run started" and "scheduled run finished" lines.</li>
+<li>If the previous scheduled run is still going, the new one is skipped and the log says <code>Previous scheduled run is still in progress - skipping this run.</code></li>
+<li>Cron jobs have a minimal <code>PATH</code>, so SIPHON records the full paths to Python, <code>hs</code> and <code>upload</code> when you set up the schedule.</li>
+<li>tmux isn't needed for scheduled runs, because cron runs them independently of your login session. (On a DSX node you still need tmux to run SIPHON interactively, including to set up the schedule.)</li>
+</ul>
+<h3 id="time-zones">Time zones</h3>
+<p>Cron runs jobs on the host's system clock and time zone. SIPHON shows your session's time zone when it asks for run times; these are normally the same. If your session sets a different <code>TZ</code>, the job follows the system time zone.</p>
+<h3 id="check-change-or-remove-a-schedule">Check, change or remove a schedule</h3>
+<ul>
+<li><strong>Check:</strong> run SIPHON. The current schedule (times, upload setting, results folder, shares and crontab entries) is shown above the menu. You can also run <code>crontab -l</code>; SIPHON's lines end with <code># SIPHON scheduled report</code>.</li>
+<li><strong>Change:</strong> run SIPHON and choose 2 or 3 again. The new schedule replaces the old one.</li>
+<li><strong>Remove:</strong> run SIPHON and choose 4. Result files and the log are kept.</li>
+<li><strong>Don't move or rename <code>hs-siphon.py</code></strong> after scheduling, because the cron job runs it from where it was. If you move it, set up the schedule again.</li>
+<li>The schedule scans the share/volume pairs it was set up with. Changing a share's saved default later doesn't change the schedule until you set it up again.</li>
+</ul>
+<p>Scheduling isn't available on Windows.</p>
+<h2 id="output">Output</h2>
+<p>Each share/volume pair has its own result file. Example:</p>
+<pre><code>Started:  2026-11-03 02:57:33
+/mnt/smb-data-portal/Linux/LinuxHome
+Volume:   legacy-nas::/ifs/data/Linux/LinuxHome
+{114123646, 163144.1864172597}
+Finished: 2026-11-03 08:11:51
+Previous run: started 2026-11-02 22:12:33, finished 2026-11-02 22:55:21
+Change since previous run:
+  Files: 115164176 -&gt; 114123646 (-1040530)
+  Size:  164704.74 GB -&gt; 163144.19 GB (-1560.56 GB)
+  OK: values decreased as expected</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th>Line</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Started:</code></td>
+<td>When this scan began.</td>
+</tr>
+<tr class="even">
+<td>Share path</td>
+<td>The share (or subfolder) that was scanned.</td>
+</tr>
+<tr class="odd">
+<td><code>Volume:</code></td>
+<td>The source volume being measured.</td>
+</tr>
+<tr class="even">
+<td><code>{files, GB}</code></td>
+<td>What is left to migrate off the volume.</td>
+</tr>
+<tr class="odd">
+<td><code>Finished:</code></td>
+<td>When this scan ended.</td>
+</tr>
+<tr class="even">
+<td><code>Previous run:</code></td>
+<td>Start and finish times of the previous scan of this share/volume, or <code>none (no previous results stored)</code> on the first run.</td>
+</tr>
+<tr class="odd">
+<td><code>Change since previous run:</code></td>
+<td>The difference from the previous run, when there is one.</td>
+</tr>
+</tbody>
+</table>
+<p>The last line of the comparison is one of:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Message</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>OK: values decreased as expected</code></td>
+<td>Data is moving off the volume.</td>
+</tr>
+<tr class="even">
+<td><code>No change since previous run</code></td>
+<td>Nothing moved between scans. The migration may be stalled.</td>
+</tr>
+<tr class="odd">
+<td><code>WARNING: value(s) INCREASED - expected a decrease</code></td>
+<td>The file count or size went up. New data may be landing on the source volume.</td>
+</tr>
+<tr class="even">
+<td><code>could not compare (values missing ...)</code></td>
+<td>One of the scans didn't return a result, usually because <code>hs sum</code> failed.</td>
+</tr>
+</tbody>
+</table>
+<p>The full-precision GB value is kept in the <code>{files, GB}</code> line; the comparison rounds to two decimals. Times are in the local time of the machine that ran the scan.</p>
+<h2 id="saved-defaults">Saved defaults</h2>
+<p>Each time you pick volumes for a share, SIPHON saves the choice to <code>.hs_sum_volume_map</code> in your home folder (<code>~/.hs_sum_volume_map</code> on macOS and Linux, <code>%USERPROFILE%\.hs_sum_volume_map</code> on Windows). The next time you enter that share path, it offers the saved volumes (press Enter to accept), and <code>all</code> at the share prompt queues every saved pair.</p>
+<p>The file is plain text, one share/volume pair per line, separated by a tab:</p>
+<pre><code>/mnt/smb-data-portal/Linux/LinuxHome    legacy-nas::/ifs/data/Linux/LinuxHome
+/mnt/smb-data-portal/Projects   legacy-nas::/ifs/data/Shared/Projects</code></pre>
+<p>Shares are matched by the exact path you typed, so <code>Z:\Projects</code> and <code>\\fileserver\Projects</code> are saved separately. To change a share's default, enter the share and answer <code>n</code> when asked to use the saved volumes; your new choice replaces the old one. To remove a share, delete its lines from the file.</p>
+<h2 id="configuration">Configuration</h2>
+<p>Set these environment variables before running SIPHON to change where files go:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Default</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>HS_SUM_OUTDIR</code></td>
+<td><code>/tmp</code> on macOS/Linux; your temp folder (<code>%TEMP%</code>) on Windows</td>
+<td>Folder for result files.</td>
+</tr>
+<tr class="even">
+<td><code>HS_SUM_MAPFILE</code></td>
+<td><code>.hs_sum_volume_map</code> in your home folder</td>
+<td>Saved share-to-volume defaults.</td>
+</tr>
+<tr class="odd">
+<td><code>HS_SIPHON_SCHEDULE</code></td>
+<td><code>~/.hs_siphon_schedule.json</code></td>
+<td>Scheduled report settings (Linux/macOS).</td>
+</tr>
+<tr class="even">
+<td><code>NO_COLOR</code></td>
+<td>not set</td>
+<td>Set to any value to turn off colored output.</td>
+</tr>
+</tbody>
+</table>
+<p>Temp folders can be cleared (<code>/tmp</code> on reboot on many Linux systems, <code>%TEMP%</code> by disk cleanup on Windows), which erases the run history so the next run reports <code>Previous run: none</code>. To keep it, use a persistent folder:</p>
+<pre><code># macOS / Linux
+HS_SUM_OUTDIR=/var/tmp python3 hs-siphon.py
+
+# Windows PowerShell
+$env:HS_SUM_OUTDIR = &quot;$HOME\siphon-results&quot;; py hs-siphon.py
+
+# Windows Command Prompt
+set HS_SUM_OUTDIR=%USERPROFILE%\siphon-results
+py hs-siphon.py</code></pre>
+<h2 id="files-siphon-creates">Files SIPHON creates</h2>
+<table>
+<thead>
+<tr class="header">
+<th>File</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>&lt;HS_SUM_OUTDIR&gt;/hs_sum_&lt;share&gt;__&lt;volume&gt;.txt</code></td>
+<td>Latest result for a share/volume pair. This is the file that gets uploaded.</td>
+</tr>
+<tr class="even">
+<td><code>&lt;HS_SUM_OUTDIR&gt;/hs_sum_&lt;share&gt;__&lt;volume&gt;.txt.prev</code></td>
+<td>The previous result, kept for comparison.</td>
+</tr>
+<tr class="odd">
+<td><code>&lt;HS_SUM_MAPFILE&gt;</code></td>
+<td>Saved share-to-volume defaults.</td>
+</tr>
+<tr class="even">
+<td><code>~/.hs_siphon_schedule.json</code></td>
+<td>Scheduled report settings: run times, shares, results folder, upload choice.</td>
+</tr>
+<tr class="odd">
+<td><code>~/.hs_siphon_schedule.json.lock</code></td>
+<td>Stops a scheduled run from starting while the previous one is still going.</td>
+</tr>
+<tr class="even">
+<td><code>~/.hs_siphon_cron.log</code></td>
+<td>Output of every scheduled run. It grows over time; delete or trim it whenever you like.</td>
+</tr>
+</tbody>
+</table>
+<p><code>&lt;share&gt;</code> is the last folder of the share path and <code>&lt;volume&gt;</code> is the volume name, with unsafe characters replaced by <code>_</code>, e.g. <code>hs_sum_LinuxHome__legacy-nas_ifs_data_Linux_LinuxHome.txt</code>.</p>
+<p>The "previous run" finish time comes from the result file's modification time, so don't edit or touch result files between runs.</p>
+<p><strong>Upgrading from earlier versions:</strong> SIPHON 1.1.0 and later use the same file names, formats and saved defaults as the 1.0.0 bash script, so your history and saved shares carry over. Result files from the original single-volume script (<code>hs_sum_&lt;share&gt;.txt</code>) are also picked up automatically on the first run for that share.</p>
+<h2 id="calculating-throughput">Calculating throughput</h2>
+<p>Each result file has everything needed to work out a migration rate:</p>
+<pre><code>files per hour = (previous files - current files) / hours between the two Finished times
+GB per hour    = (previous GB    - current GB)    / hours between the two Finished times</code></pre>
+<p>Use the <strong>Finished</strong> times of consecutive runs. For a long-run average, compare against the first reading (or the migration's start date and the share's starting size) instead of the previous run. The time left at a given rate is <code>files remaining / files per hour</code>.</p>
+<p>Example from the output above: 1,040,530 files and 1,560.56 GB moved between 22:55:21 and 08:11:51 (9.28 hours) is about 112,000 files/hr and 168 GB/hr.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Symptom</th>
+<th>Cause and fix</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ERROR: 'hs' command not found</code></td>
+<td>Install the toolkit with <code>pip install hstk</code>. If it's installed, make sure pip's scripts folder is on your <code>PATH</code> (on Windows, pip prints this folder's location with a warning during install).</td>
+</tr>
+<tr class="even">
+<td><code>'py' is not recognized</code> / <code>python: command not found</code></td>
+<td>Install Python 3 from python.org (on Windows, tick "Add python.exe to PATH"), or use <code>python</code> / <code>python3</code> instead of <code>py</code>.</td>
+</tr>
+<tr class="odd">
+<td><code>ERROR: Not running inside a tmux session.</code></td>
+<td>On a DSX node, start a tmux session (<code>tmux new -s siphon</code>) and run SIPHON inside it.</td>
+</tr>
+<tr class="even">
+<td><code>ERROR: This script must NOT be run from a Hammerspace Anvil.</code></td>
+<td>End users: run it from your own client. Hammerspace personnel: use a DSX node.</td>
+</tr>
+<tr class="odd">
+<td><code>No volumes found in the output</code></td>
+<td>The path may not be on a Hammerspace share, or the toolkit can't reach it. Check the path (on Windows, that the drive is mapped), or type the volume name manually with <code>m</code>.</td>
+</tr>
+<tr class="even">
+<td><code>Previous run: none</code> every time</td>
+<td>The output folder is being cleared. Set <code>HS_SUM_OUTDIR</code> to a persistent folder.</td>
+</tr>
+<tr class="odd">
+<td><code>NOTE: 'upload' command not found</code></td>
+<td>The host has no <code>upload</code> command. Results are still saved in the output folder.</td>
+</tr>
+<tr class="even">
+<td><code>WARNING: value(s) INCREASED</code></td>
+<td>New or changed data is landing on the source volume, or the scan counted something different. Check for writes to the old storage.</td>
+</tr>
+<tr class="odd">
+<td>Garbled characters or <code>1;36m</code> codes</td>
+<td>The console doesn't support colors. Set <code>NO_COLOR=1</code>, or use Windows Terminal / PowerShell on Windows 10 or later.</td>
+</tr>
+<tr class="even">
+<td><code>NOTE: 'crontab' not found on this host - scheduling is not available</code></td>
+<td>Install cron (for example the <code>cron</code> or <code>cronie</code> package) to schedule reports, or run SIPHON by hand.</td>
+</tr>
+<tr class="odd">
+<td>A scheduled run didn't happen</td>
+<td>Check <code>crontab -l</code> for lines ending <code># SIPHON scheduled report</code>, check <code>~/.hs_siphon_cron.log</code>, and make sure <code>hs-siphon.py</code> hasn't been moved. The cron service must be running on the host.</td>
+</tr>
+<tr class="even">
+<td><code>Previous scheduled run is still in progress - skipping this run.</code></td>
+<td>The scans take longer than the gap between run times. Choose fewer or more widely spaced run times.</td>
+</tr>
+<tr class="odd">
+<td><code>No input - exiting.</code></td>
+<td>Input ended at a prompt (Ctrl-D, Ctrl-Z then Enter on Windows, or a closed terminal). Re-run SIPHON.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="limitations-and-roadmap">Limitations and roadmap</h2>
+<ul>
+<li>SIPHON is interactive, apart from scheduled runs. The command-line options that work are <code>-h</code> / <code>--help</code>, and <code>--cron</code> with <code>--schedule-file</code> (used by the cron job). The other options in the script header (<code>--source</code>, <code>--target</code>, <code>-v</code>, <code>-w</code>, <code>-i</code>, <code>-l</code>) are planned but not implemented; if passed, they are ignored with a note.</li>
+<li>Scheduling uses cron, so it's available on Linux and macOS only. There's one SIPHON schedule per user.</li>
+<li>Throughput isn't calculated by the script itself; see [Calculating throughput.</li>
+<li>Scans run one after the other, not in parallel.</li>
+<li>Volume names containing a single quote (<code>'</code>) aren't supported in the <code>hs sum</code> expression.</li>
+</ul>
+<h2 id="version-history">Version history</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Version</th>
+<th>Changes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1.2.0</td>
+<td>Adds recurring reports via cron on Linux and macOS (including DSX nodes): run once now, schedule, or both; daily run times (no more than 2 per day recommended); upload choice for scheduled runs; overlap protection; log file; remove-schedule option. One-off runs unchanged.</td>
+</tr>
+<tr class="even">
+<td>1.1.0</td>
+<td>Rewritten in Python so SIPHON runs on Windows as well as macOS and Linux (Windows not yet fully tested). Same prompts, file names, formats and saved defaults as 1.0.0. Adds Windows drive/UNC path support, finding <code>hs</code> in pip's scripts folder, plain-text banner fallback and <code>NO_COLOR</code>. Documents that only Hammerspace personnel may run SIPHON on DSX nodes. Replaces <code>hs-siphon.sh</code>.</td>
+</tr>
+<tr class="odd">
+<td>1.0.0</td>
+<td>First release as SIPHON (bash): any share path, volume discovery with <code>hs status volume</code>, multiple volumes per share, saved defaults, <code>all</code> shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="license">License</h2>
+<p>SIPHON is dual-licensed under either of:</p>
+<ul>
+<li>Apache License, Version 2.0 (see <code>LICENSE-APACHE</code>)</li>
+<li>MIT License (see <code>LICENSE-MIT</code>)</li>
+</ul>
+<p>at your option. Unless you state otherwise, any contribution you submit for inclusion in this project is dual-licensed as above, without any additional terms or conditions.</p>
+
+  </article>
+</div>
+
+<script>
+(function () {
+  var doc = document.getElementById("doc");
+  var status = document.getElementById("status");
+  function say(msg) { status.textContent = msg; }
+  function selectDoc() {
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    var r = document.createRange();
+    r.selectNodeContents(doc);
+    sel.addRange(r);
+  }
+  document.getElementById("select").addEventListener("click", function () {
+    selectDoc();
+    say("Selected. Press Ctrl+C or ⌘+C to copy.");
+  });
+  document.getElementById("copy").addEventListener("click", function () {
+    var html = doc.innerHTML, text = doc.innerText;
+    var fallback = function () {
+      selectDoc();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      if (ok) { window.getSelection().removeAllRanges(); say("Copied. Paste it into your Confluence page."); }
+      else { say("Copying isn't allowed here. The guide is selected: press Ctrl+C or ⌘+C."); }
+    };
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        var item = new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" })
+        });
+        navigator.clipboard.write([item]).then(function () {
+          say("Copied. Paste it into your Confluence page.");
+        }, fallback);
+      } else { fallback(); }
+    } catch (e) { fallback(); }
+  });
+})();
+</script>

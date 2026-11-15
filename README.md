@@ -30,6 +30,7 @@ The script is `hs-siphon.py`; the tool is called SIPHON. It runs on **Windows, m
 - [Troubleshooting](#troubleshooting)
 - [Limitations and roadmap](#limitations-and-roadmap)
 - [Version history](#version-history)
+- [Confluence](#confluence)
 - [License](#license)
 
 ---
@@ -435,6 +436,15 @@ Example from the output above: 1,040,530 files and 1,560.56 GB moved between 22:
 | 1.2.0 | Adds recurring reports via cron on Linux and macOS (including DSX nodes): run once now, schedule, or both; daily run times (no more than 2 per day recommended); upload choice for scheduled runs; overlap protection; log file; remove-schedule option. One-off runs unchanged. |
 | 1.1.0 | Rewritten in Python so SIPHON runs on Windows as well as macOS and Linux (Windows not yet fully tested). Same prompts, file names, formats and saved defaults as 1.0.0. Adds Windows drive/UNC path support, finding `hs` in pip's scripts folder, plain-text banner fallback and `NO_COLOR`. Documents that only Hammerspace personnel may run SIPHON on DSX nodes. Replaces `hs-siphon.sh`. |
 | 1.0.0 | First release as SIPHON (bash): any share path, volume discovery with `hs status volume`, multiple volumes per share, saved defaults, `all` shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional. |
+
+## Confluence
+
+Two Confluence versions of these docs are in [`docs/`](docs/). Neither contains GitHub links, because they're meant for an internal Confluence space.
+
+- [`SIPHON-confluence-paste.html`](docs/SIPHON-confluence-paste.html): download it, open it in a browser, click **Copy for Confluence** and paste into a Confluence page. This works in any Confluence editor.
+- [`SIPHON-confluence.wiki`](docs/SIPHON-confluence.wiki): Confluence wiki markup, for editors with **Insert → Markup**.
+
+After changing this README, rebuild the paste page with `python3 docs/build-confluence-paste.py` (needs pandoc).
 
 ## License
 
