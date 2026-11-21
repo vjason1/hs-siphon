@@ -56,7 +56,7 @@ article th { background: var(--wash); }
 </style>
 
 <div class="bar"><div class="bar-inner">
-  <h1>SIPHON <span class="ver">v1.2.0 · guide for Confluence</span></h1>
+  <h1>SIPHON <span class="ver">v1.3.0 · guide for Confluence</span></h1>
   <span class="spacer"></span>
   <span id="status" role="status" aria-live="polite"></span>
   <button id="copy" type="button">Copy for Confluence</button>
@@ -77,11 +77,11 @@ article th { background: var(--wash); }
 
   <article id="doc">
 <p>Script: <a href="https://github.com/vjason1/hs-siphon/blob/main/hs-siphon.py">hs-siphon.py</a><br />
-Version: 1.2.0<br />
-Updated: 2026-11-14<br />
+Version: 1.3.0<br />
+Updated: 2026-11-20<br />
 Authors: Jason Ventresco (with Claude)</p>
 <p><strong>S.I.P.H.O.N. — Storage Ingestion Progress &amp; High-volume Orchestration Navigator</strong><br> Data migration telemetry for Hammerspace.</p>
-<p>SIPHON tracks how much data is still left to migrate off a storage volume behind a Hammerspace share. For each share and volume you pick, it counts the files (and GB) that still have an instance on that volume. It saves the result, compares it with the previous run, and uploads it. Run it several times a day, by hand or on a schedule (cron on Linux and macOS): the counts should go down as the migration progresses, and the difference between runs gives you your throughput.</p>
+<p>SIPHON tracks how much data is still left to migrate off a storage volume behind a Hammerspace share. For each share and volume you pick, it counts the files (and GB) that still have an instance on that volume. It saves the result, compares it with the previous run, and uploads it. Run it several times a day, by hand or on a schedule (cron on Linux and macOS): the counts should go down as the migration progresses, and the difference between runs gives you your throughput. You can review the monitoring configuration at any time and add or remove shares.</p>
 <p>The script is <code>hs-siphon.py</code>; the tool is called SIPHON. It runs on <strong>Windows, macOS and Linux</strong>.</p>
 <blockquote>
 <p><strong>Windows support has not been fully tested yet.</strong> SIPHON is written to run on Windows, but so far it has only been tested on Linux. If you run it on Windows, check the results against a known share first, and please report any problems to the SIPHON maintainers.</p>
@@ -199,15 +199,23 @@ Keep this window open (and the computer awake) until the scans finish.</code></p
 <li><strong>Neither:</strong> SIPHON treats the host as an end-user client.</li>
 </ul>
 <p>In every case, if the <code>hs</code> command can't be found, SIPHON exits. On a client it shows <code>pip install hstk</code>. SIPHON looks for <code>hs</code> on your <code>PATH</code> and in Python's scripts folder, where pip installs it.</p>
-<h3 id="3-run-now-or-schedule">3. Run now or schedule</h3>
-<p>On Linux and macOS, SIPHON asks what you want to do. If a schedule already exists, it's shown first.</p>
+<h3 id="3-main-menu">3. Main menu</h3>
+<p>SIPHON asks what you want to do. If a schedule already exists, it's shown first.</p>
 <pre><code>What would you like to do?
   1) Run the report once now
   2) Schedule the report to run every day (cron)
   3) Run once now AND schedule it
-  4) Remove the existing schedule
+  4) Review or change the monitoring configuration
+  5) Remove the existing schedule
+  6) Exit
 Choice [1]:</code></pre>
-<p>Press <strong>Enter</strong> to run once now, exactly as in earlier versions. Option 4 appears only when a schedule exists. See Scheduling recurring reports (cron) for options 2–4. On Windows, or on a host without <code>crontab</code>, there's no menu and SIPHON runs once.</p>
+<p>Press <strong>Enter</strong> to run once now, exactly as in earlier versions.</p>
+<ul>
+<li><strong>2 and 3</strong> schedule the report; see Scheduling recurring reports (cron).</li>
+<li><strong>4</strong> shows every monitored share and lets you add or remove them; see Reviewing and changing the monitoring configuration. When you're done there, you come back to this menu.</li>
+<li><strong>5</strong> appears only when a schedule exists.</li>
+</ul>
+<p>On Windows, or on a host without <code>crontab</code>, the menu has only <em>Run the report once now</em>, <em>Review or change the monitoring configuration</em> and <em>Exit</em>.</p>
 <h3 id="4-choose-a-share">4. Choose a share</h3>
 <pre><code>Share path examples:
   DSX:             /mnt/smb-data-portal/&lt;sharename&gt;/&lt;optional/subfolder/path&gt;
@@ -295,12 +303,56 @@ Install this schedule in your crontab? (y/n): y</code></pre></li>
 <h3 id="check-change-or-remove-a-schedule">Check, change or remove a schedule</h3>
 <ul>
 <li><strong>Check:</strong> run SIPHON. The current schedule (times, upload setting, results folder, shares and crontab entries) is shown above the menu. You can also run <code>crontab -l</code>; SIPHON's lines end with <code># SIPHON scheduled report</code>.</li>
-<li><strong>Change:</strong> run SIPHON and choose 2 or 3 again. The new schedule replaces the old one.</li>
-<li><strong>Remove:</strong> run SIPHON and choose 4. Result files and the log are kept.</li>
+<li><strong>Change what it scans:</strong> choose <strong>4) Review or change the monitoring configuration</strong>. You can add or remove shares in the scheduled report without setting the schedule up again.</li>
+<li><strong>Change times, results folder or upload:</strong> in the same screen choose <strong>t</strong>, or choose 2 or 3 at the main menu to set the schedule up again from scratch. Either way, the new schedule replaces the old one.</li>
+<li><strong>Remove:</strong> choose <strong>5) Remove the existing schedule</strong>. Result files and the log are kept.</li>
 <li><strong>Don't move or rename <code>hs-siphon.py</code></strong> after scheduling, because the cron job runs it from where it was. If you move it, set up the schedule again.</li>
-<li>The schedule scans the share/volume pairs it was set up with. Changing a share's saved default later doesn't change the schedule until you set it up again.</li>
 </ul>
 <p>Scheduling isn't available on Windows.</p>
+<h2 id="reviewing-and-changing-the-monitoring-configuration">Reviewing and changing the monitoring configuration</h2>
+<p>Choose <strong>4) Review or change the monitoring configuration</strong> at the main menu to see everything SIPHON monitors and make changes:</p>
+<pre><code>Monitoring configuration
+  Saved share/volume pairs: /home/jdoe/.hs_sum_volume_map
+  Scheduled report:         every day at 06:00, 18:00 (EST), upload on
+
+   1) /mnt/smb-data-portal/Linux/LinuxHome  -&gt;  legacy-nas::/ifs/data/Linux/LinuxHome   [scheduled]
+   2) /mnt/smb-data-portal/Projects  -&gt;  legacy-nas::/ifs/data/Shared/Projects   [scheduled]
+   3) /mnt/smb-data-portal/Collaboration/Sci  -&gt;  legacy-nas::/ifs/data/Collaboration/Sci
+
+  a) Add a share (or more volumes for a share)
+  r) Remove share/volume pairs
+  s) Choose which pairs the scheduled report scans
+  t) Change the schedule&#39;s run times, results folder or upload setting
+  b) Back to the main menu
+Choice [b]:</code></pre>
+<p>The list shows every share/volume pair SIPHON knows about. Pairs marked <strong>[scheduled]</strong> are scanned by the scheduled report. A pair marked <strong>[schedule only]</strong> is still in the scheduled report but was removed from your saved shares. Options <strong>s</strong> and <strong>t</strong> appear only when a schedule exists.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Action</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>a) Add</strong></td>
+<td>Enter a share path and pick its volume(s) from <code>hs status volume</code>, the same way as for a scan. If the share is already monitored, the volumes you pick are added to the ones it has. If a schedule exists, SIPHON asks whether to add the new pairs to the scheduled report too (the default is yes).</td>
+</tr>
+<tr class="even">
+<td><strong>r) Remove</strong></td>
+<td>Enter the numbers of the pairs to remove, e.g. <code>2</code> or <code>1,3</code>, and confirm. If any of them are in the scheduled report, SIPHON asks whether to remove them from it too (the default is yes). If that would leave the scheduled report with nothing to scan, it offers to remove the schedule. Result files are kept.</td>
+</tr>
+<tr class="odd">
+<td><strong>s) Scheduled pairs</strong></td>
+<td>Enter the numbers of the pairs the scheduled report should scan. Press Enter to keep the current ones.</td>
+</tr>
+<tr class="even">
+<td><strong>t) Schedule settings</strong></td>
+<td>Change the run times, results folder or upload setting, with the same prompts as when you first set up the schedule.</td>
+</tr>
+</tbody>
+</table>
+<p>Changes are saved straight away and apply from the next scan or scheduled run; there's no separate save step. The crontab doesn't change when you add or remove scheduled pairs, because the cron job reads the list each time it runs.</p>
 <h2 id="output">Output</h2>
 <p>Each share/volume pair has its own result file. Example:</p>
 <pre><code>Started:  2026-11-03 02:57:33
@@ -384,7 +436,7 @@ Change since previous run:
 <p>The file is plain text, one share/volume pair per line, separated by a tab:</p>
 <pre><code>/mnt/smb-data-portal/Linux/LinuxHome    legacy-nas::/ifs/data/Linux/LinuxHome
 /mnt/smb-data-portal/Projects   legacy-nas::/ifs/data/Shared/Projects</code></pre>
-<p>Shares are matched by the exact path you typed, so <code>Z:\Projects</code> and <code>\\fileserver\Projects</code> are saved separately. To change a share's default, enter the share and answer <code>n</code> when asked to use the saved volumes; your new choice replaces the old one. To remove a share, delete its lines from the file.</p>
+<p>Shares are matched by the exact path you typed, so <code>Z:\Projects</code> and <code>\\fileserver\Projects</code> are saved separately. To change a share's default, enter the share and answer <code>n</code> when asked to use the saved volumes; your new choice replaces the old one. To review the list or remove a share, choose <strong>4) Review or change the monitoring configuration</strong> at the main menu.</p>
 <h2 id="configuration">Configuration</h2>
 <p>Set these environment variables before running SIPHON to change where files go:</p>
 <table>
@@ -553,14 +605,18 @@ GB per hour    = (previous GB    - current GB)    / hours between the two Finish
 </thead>
 <tbody>
 <tr class="odd">
+<td>1.3.0</td>
+<td>Review and change the monitoring configuration from the main menu: list every monitored share/volume pair, add or remove pairs, choose which pairs the scheduled report scans, and change schedule settings. The main menu now has an Exit option and appears on every host, including Windows.</td>
+</tr>
+<tr class="even">
 <td>1.2.0</td>
 <td>Adds recurring reports via cron on Linux and macOS (including DSX nodes): run once now, schedule, or both; daily run times (no more than 2 per day recommended); upload choice for scheduled runs; overlap protection; log file; remove-schedule option. One-off runs unchanged.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>1.1.0</td>
 <td>Rewritten in Python so SIPHON runs on Windows as well as macOS and Linux (Windows not yet fully tested). Same prompts, file names, formats and saved defaults as 1.0.0. Adds Windows drive/UNC path support, finding <code>hs</code> in pip's scripts folder, plain-text banner fallback and <code>NO_COLOR</code>. Documents that only Hammerspace personnel may run SIPHON on DSX nodes. Replaces <code>hs-siphon.sh</code>.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>1.0.0</td>
 <td>First release as SIPHON (bash): any share path, volume discovery with <code>hs status volume</code>, multiple volumes per share, saved defaults, <code>all</code> shortcut, Anvil block, tmux enforcement on DSX nodes, summary table, upload made optional.</td>
 </tr>

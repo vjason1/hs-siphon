@@ -4,7 +4,7 @@
 # Open Source Data Migration Telemetry for Hammerspace
 # ==============================================================================
 # Project:         SIPHON (github.com/vjason1/hs-siphon)
-# Version:         1.2.0
+# Version:         1.3.0
 # License:         Apache-2.0 OR MIT (see LICENSE-APACHE and LICENSE-MIT)
 # Target Runtime:  Python 3.6+ on Windows, macOS or Linux, with the
 #                  Hammerspace Toolkit (hstk)
@@ -40,6 +40,10 @@
 #   nodes) schedule the configured report to run every day at set times via
 #   cron. No more than 2 scheduled runs per day are recommended.
 #
+#   The monitoring configuration (which share/volume pairs are monitored, and
+#   which of them the scheduled report scans) can be reviewed and changed from
+#   the main menu: add shares, remove them, or change the scheduled report.
+#
 # Requirement: Hammerspace Toolkit (provides the 'hs' command).
 #   - Already installed on Hammerspace DSX nodes.
 #   - On any other host (Windows, macOS, Linux):  pip install hstk
@@ -71,7 +75,7 @@ import sys
 import sysconfig
 import tempfile
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 IS_WINDOWS = os.name == "nt"
 
 # --- [ Settings ] ------------------------------------------------------------
@@ -307,6 +311,20 @@ def save_mapping(share, volumes):
     tmp = "{}.tmp.{}".format(MAPFILE, os.getpid())
     with open(tmp, "w", encoding="utf-8", newline="\n") as f:
         for s, v in pairs:
+            f.write("{}\t{}\n".format(s, v))
+    os.replace(tmp, MAPFILE)
+
+
+def remove_mappings(pairs):
+    """Remove the given (share, volume) pairs from the saved defaults."""
+    drop = set(tuple(p) for p in pairs)
+    keep = [p for p in load_mappings() if p not in drop]
+    folder = os.path.dirname(MAPFILE)
+    if folder:
+        os.makedirs(folder, exist_ok=True)
+    tmp = "{}.tmp.{}".format(MAPFILE, os.getpid())
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        for s, v in keep:
             f.write("{}\t{}\n".format(s, v))
     os.replace(tmp, MAPFILE)
 
@@ -698,25 +716,25 @@ def show_schedule(sched, lines):
         print("  (No SIPHON entries found in your crontab - the schedule is not active.)")
 
 
-def choose_mode():
-    """Ask whether to run now, schedule, both, or remove the schedule."""
-    if IS_WINDOWS:
-        return "now"
-    if not cron_available():
+def choose_mode(first=True):
+    """Main menu: run now, schedule, both, review/change the configuration, remove the schedule, exit."""
+    can_cron = cron_available()
+    sched, lines = (load_schedule(), siphon_cron_lines()) if can_cron else (None, [])
+    if first and not IS_WINDOWS and not can_cron:
         print()
-        print("NOTE: 'crontab' not found on this host - scheduling is not available; running once now.")
-        return "now"
-
-    sched, lines = load_schedule(), siphon_cron_lines()
-    if sched or lines:
+        print("NOTE: 'crontab' not found on this host - scheduling is not available.")
+    if first and (sched or lines):
         print()
         show_schedule(sched, lines)
 
-    options = [("now", "Run the report once now"),
-               ("schedule", "Schedule the report to run every day (cron)"),
-               ("both", "Run once now AND schedule it")]
+    options = [("now", "Run the report once now")]
+    if can_cron:
+        options += [("schedule", "Schedule the report to run every day (cron)"),
+                    ("both", "Run once now AND schedule it")]
+    options.append(("manage", "Review or change the monitoring configuration"))
     if sched or lines:
         options.append(("remove", "Remove the existing schedule"))
+    options.append(("exit", "Exit"))
     print()
     print("What would you like to do?")
     for i, (_, label) in enumerate(options, 1):
@@ -767,7 +785,7 @@ def schedule_setup(hs, upload, run_list):
     """Prompt for run times, folder and upload choice; save the schedule and install it in crontab."""
     print()
     print("=== Schedule a recurring report (cron) ===")
-    print("The scheduled report scans the share/volume pairs you just selected:")
+    print("The scheduled report scans these share/volume pairs:")
     for s, v in run_list:
         print("  {}  ->  {}".format(s, v))
 
@@ -842,10 +860,14 @@ def schedule_setup(hs, upload, run_list):
 
 
 def remove_schedule():
-    lines = siphon_cron_lines()
     if not ask_yn("Remove the SIPHON schedule from your crontab?"):
         print("Schedule kept.")
         return
+    remove_schedule_now()
+
+
+def remove_schedule_now():
+    lines = siphon_cron_lines()
     if lines:
         others = [l for l in read_crontab().splitlines() if CRON_MARKER not in l]
         try:
@@ -858,6 +880,182 @@ def remove_schedule():
     except OSError:
         pass
     print("Schedule removed. Existing result files and the log ({}) were kept.".format(CRON_LOG))
+
+
+# --- [ Review / change the monitoring configuration ] ------------------------
+def save_schedule(sched):
+    with open(SCHEDFILE + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(sched, f, indent=2)
+    os.replace(SCHEDFILE + ".tmp", SCHEDFILE)
+
+
+def config_entries(sched):
+    """Every monitored pair: saved defaults first, then pairs only the schedule has.
+    Returns a list of (share, volume, saved, scheduled)."""
+    saved = load_mappings()
+    scheduled = [tuple(p) for p in (sched or {}).get("run_list", [])]
+    out = [(s, v, True, (s, v) in scheduled) for s, v in saved]
+    out += [(s, v, False, True) for s, v in scheduled if (s, v) not in saved]
+    return out
+
+
+def show_config(entries, sched):
+    print()
+    print("Monitoring configuration")
+    print("  Saved share/volume pairs: {}".format(MAPFILE))
+    if sched:
+        print("  Scheduled report:         every day at {} ({}), upload {}".format(
+            fmt_times([tuple(t) for t in sched.get("times", [])]), sched.get("timezone", "local time"),
+            "on" if sched.get("upload") else "off"))
+    else:
+        print("  Scheduled report:         none")
+    print()
+    if not entries:
+        print("  No shares are monitored yet.")
+        return
+    for i, (s, v, saved, scheduled) in enumerate(entries, 1):
+        tags = []
+        if scheduled:
+            tags.append("scheduled")
+        if not saved:
+            tags.append("schedule only")
+        print("  {:2d}) {}  ->  {}{}".format(i, s, v, "   [{}]".format(", ".join(tags)) if tags else ""))
+
+
+def parse_numbers(text, count):
+    """'1, 3 4' -> [0, 2, 3] (zero-based, de-duplicated, in order); raises ValueError."""
+    picks = []
+    for tok in re.split(r"[\s,]+", text.strip()):
+        if not tok:
+            continue
+        if not tok.isdigit() or not 1 <= int(tok) <= count:
+            raise ValueError("'{}' is not a number from 1 to {}".format(tok, count))
+        if int(tok) - 1 not in picks:
+            picks.append(int(tok) - 1)
+    return picks
+
+
+def config_add(hs, sched):
+    print()
+    share = ask("Share path to add (blank = cancel): ").strip()
+    if not share:
+        return
+    share = normalize_path(share)
+    if not os.path.isdir(share):
+        print("  WARNING: {} is not a directory on this host.".format(share))
+        if not ask_yn("  Use it anyway?", "n"):
+            return
+    existing = saved_volumes(share)
+    if existing:
+        print("  Already monitored on: {}".format(", ".join(existing)))
+        print("  Pick any volumes to add; the existing ones are kept.")
+    chosen = choose_volumes(hs, share)
+    new = [v for v in chosen if v not in existing]
+    if not new:
+        print("  Nothing added.")
+        return
+    save_mapping(share, existing + new)
+    for v in new:
+        print("  Added: {}  ->  {}".format(share, v))
+    if sched:
+        run_list = [tuple(p) for p in sched.get("run_list", [])]
+        missing = [(share, v) for v in new if (share, v) not in run_list]
+        if missing and ask_yn("  Add {} to the scheduled report too?".format(
+                "it" if len(missing) == 1 else "them"), "y"):
+            sched["run_list"] = [list(p) for p in run_list + missing]
+            save_schedule(sched)
+            print("  The scheduled report now scans {} pair(s), starting with its next run.".format(len(sched["run_list"])))
+
+
+def config_remove(entries, sched):
+    print()
+    sel = ask("Numbers to remove, e.g. 2 or 1,3 (blank = cancel): ").strip()
+    if not sel:
+        return
+    try:
+        picks = [entries[i] for i in parse_numbers(sel, len(entries))]
+    except ValueError as e:
+        print("  {}.".format(str(e).capitalize()))
+        return
+    print("  Removing:")
+    for s, v, _, _ in picks:
+        print("    {}  ->  {}".format(s, v))
+    if not ask_yn("  Remove {}?".format("it" if len(picks) == 1 else "these"), "n"):
+        print("  Nothing removed.")
+        return
+
+    remove_mappings([(s, v) for s, v, saved, _ in picks if saved])
+    in_sched = [(s, v) for s, v, _, scheduled in picks if scheduled]
+    if in_sched and sched:
+        print("  {} of these {} in the scheduled report.".format(len(in_sched), "is" if len(in_sched) == 1 else "are"))
+        if ask_yn("  Remove {} from the scheduled report too?".format("it" if len(in_sched) == 1 else "them"), "y"):
+            left = [p for p in sched.get("run_list", []) if tuple(p) not in in_sched]
+            if not left:
+                if ask_yn("  That leaves the scheduled report with nothing to scan. Remove the schedule?", "y"):
+                    remove_schedule_now()
+                else:
+                    print("  The scheduled report was left unchanged.")
+            else:
+                sched["run_list"] = left
+                save_schedule(sched)
+                print("  The scheduled report now scans {} pair(s), starting with its next run.".format(len(left)))
+    print("  Removed.")
+
+
+def config_pick_scheduled(entries, sched):
+    print()
+    current = [str(i) for i, e in enumerate(entries, 1) if e[3]]
+    print("Enter the numbers of the pairs the scheduled report should scan, e.g. 1,3.")
+    while True:
+        sel = ask("Scheduled pairs (Enter = keep {}): ".format(" ".join(current) or "current")).strip()
+        if not sel:
+            print("  No change.")
+            return
+        try:
+            picks = parse_numbers(sel, len(entries))
+        except ValueError as e:
+            print("  {}.".format(str(e).capitalize()))
+            continue
+        if not picks:
+            continue
+        sched["run_list"] = [[entries[i][0], entries[i][1]] for i in picks]
+        save_schedule(sched)
+        print("  The scheduled report now scans {} pair(s), starting with its next run.".format(len(picks)))
+        return
+
+
+def manage_config(hs, upload):
+    """Review the monitoring configuration and make additions or removals."""
+    while True:
+        sched = load_schedule() if cron_available() else None
+        entries = config_entries(sched)
+        show_config(entries, sched)
+
+        actions = [("a", "Add a share (or more volumes for a share)")]
+        if entries:
+            actions.append(("r", "Remove share/volume pairs"))
+        if sched and entries:
+            actions.append(("s", "Choose which pairs the scheduled report scans"))
+        if sched:
+            actions.append(("t", "Change the schedule's run times, results folder or upload setting"))
+        actions.append(("b", "Back to the main menu"))
+        print()
+        for key, label in actions:
+            print("  {}) {}".format(key, label))
+        choice = ask("Choice [b]: ").strip().lower() or "b"
+        if choice not in [k for k, _ in actions]:
+            print("  Please enter one of: {}.".format(", ".join(k for k, _ in actions)))
+            continue
+        if choice == "b":
+            return
+        if choice == "a":
+            config_add(hs, sched)
+        elif choice == "r":
+            config_remove(entries, sched)
+        elif choice == "s":
+            config_pick_scheduled(entries, sched)
+        elif choice == "t":
+            schedule_setup(hs, upload, [tuple(p) for p in sched.get("run_list", [])])
 
 
 def run_cron(schedfile):
@@ -935,8 +1133,13 @@ def main(argv):
     try:
         hs, upload, _hs_node = preflight()
         mode = choose_mode()
-        if mode == "remove":
-            remove_schedule()
+        while mode in ("manage", "remove"):
+            if mode == "manage":
+                manage_config(hs, upload)
+            else:
+                remove_schedule()
+            mode = choose_mode(first=False)
+        if mode == "exit":
             return 0
         run_list = select_targets(hs, "start scanning" if mode != "schedule" else "continue to scheduling")
         if mode in ("schedule", "both"):
